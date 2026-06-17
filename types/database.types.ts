@@ -178,3 +178,56 @@ export type RecommendationWithProfile = PsychologistRecommendationRow & {
   profiles: Pick<ProfileRow, 'full_name' | 'avatar_url' | 'bio' | 'specialties' | 'price_per_session'>
   slots: Pick<SlotRow, 'start_time' | 'end_time'> | null
 }
+
+// ─── Question Tree Types ───────────────────────────────────────────────────────
+
+export type QuestionType = 'single' | 'multi'
+
+export interface QuestionRow {
+  id: string
+  text: string
+  description: string | null
+  type: QuestionType
+  is_first: boolean
+  is_active: boolean
+  order_index: number
+  created_at: string
+}
+
+export interface QuestionOptionRow {
+  id: string
+  question_id: string
+  text: string
+  emoji: string | null
+  next_question_id: string | null
+  order_index: number
+  created_at: string
+}
+
+export interface OptionSpecialtyRow {
+  id: string
+  option_id: string
+  specialty: string
+  weight: number
+}
+
+export interface ClientAssessmentRow {
+  id: string
+  client_id: string
+  answers: { question_id: string; option_ids: string[] }[]
+  scores: Record<string, number>
+  completed_at: string
+}
+
+export type QuestionWithOptions = QuestionRow & {
+  question_options: (QuestionOptionRow & {
+    option_specialties: OptionSpecialtyRow[]
+  })[]
+}
+
+export interface MatchedPsychologist {
+  profile: ProfileRow
+  score: number
+  matchedSpecialties: string[]
+  availableSlots: SlotRow[]
+}
