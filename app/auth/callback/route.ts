@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = { from: (table: string) => any }
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/client'
+  const next = searchParams.get('next') // explicit yönlendirme varsa kullan
 
   if (code) {
     const supabase = await createClient()
@@ -16,26 +18,46 @@ export async function GET(request: Request) {
 
       const { data: existing } = await supabase
         .from('users')
-        .select('id')
+        .select('id, role')
         .eq('id', userId)
-        .maybeSingle()
+        .maybeSingle() as { data: { id: string; role: string } | null }
 
       if (!existing) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await supabase.from('users').upsert({ id: userId, email: userEmail, role: 'client' } as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await supabase.from('profiles').upsert({
+        const db = supabase as unknown as AnyClient
+        const fullName = (data.user.user_metadata?.full_name as string | undefined) ?? userEmail
+        await db.from('users').insert({
           id: userId,
-          full_name: data.user.user_metadata?.full_name ?? userEmail,
-          avatar_url: data.user.user_metadata?.avatar_url ?? null,
+          email: userEmail,
+          role: 'client',
+        })
+        await db.from('profiles').insert({
+          id: userId,
+          full_name: fullName,
+          avatar_url: (data.user.user_metadata?.avatar_url as string | undefined) ?? null,
+          bio: null,
           specialties: [],
+          price_per_session: null,
           is_approved: false,
-        } as any)
+          gender: null,
+        })
+        return NextResponse.redirect(`${origin}${next ?? '/client'}`)
       }
 
-      return NextResponse.redirect(`${origin}${next}`)
+      // Mevcut kullanıcı — explicit next varsa onu kullan, yoksa role'e göre yönlendir
+      if (next) {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
+
+      const role = existing.role
+      if (role === 'psychologist') {
+        return NextResponse.redirect(`${origin}/psychologist`)
+      }
+      if (role === 'admin') {
+        return NextResponse.redirect(`${origin}/admin`)
+      }
+      return NextResponse.redirect(`${origin}/client`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`)
+  return NextResponse.redirect(`${origin}/auth/login?error=auth`)
 }

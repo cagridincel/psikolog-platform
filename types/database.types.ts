@@ -1,6 +1,6 @@
 export type UserRole = 'client' | 'psychologist' | 'admin'
 export type AppointmentStatus = 'pending_approval' | 'scheduled' | 'completed' | 'cancelled' | 'auto_cancelled'
-export type SlotStatus = 'available' | 'requested' | 'booked'
+export type SlotStatus = 'available' | 'requested' | 'booked' | 'completed'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled'
 export type SessionOutcome =
   | 'attended'
@@ -30,6 +30,7 @@ export interface ProfileRow {
   specialties: string[]
   price_per_session: number | null
   is_approved: boolean
+  gender: string | null
 }
 
 export interface SlotRow {
@@ -131,9 +132,9 @@ export type PsychologistRecommendationInsert = Omit<PsychologistRecommendationRo
 
 // --- Update Types ---
 
-export type SlotUpdate = Partial<Pick<SlotRow, 'status'>>
+export type SlotUpdate = Partial<Pick<SlotRow, 'status'>> & { status?: SlotStatus }
 export type PaymentUpdate = Partial<Pick<PaymentRow, 'sessions_used' | 'status' | 'iyzico_payment_id' | 'cancelled_at' | 'cancelled_reason'>>
-export type AppointmentUpdate = Partial<Pick<AppointmentRow, 'status' | 'meeting_room_url' | 'rejection_reason' | 'rejected_at'>>
+export type AppointmentUpdate = Partial<Pick<AppointmentRow, 'status' | 'meeting_room_url' | 'rejection_reason' | 'rejected_at'>> & { status?: AppointmentStatus }
 export type NotificationUpdate = Partial<Pick<NotificationRow, 'is_read'>>
 export type NotificationScheduleUpdate = Partial<Pick<NotificationScheduleRow, 'sent_at' | 'is_sent'>>
 export type RecommendationUpdate = Partial<Pick<PsychologistRecommendationRow, 'status'>>

@@ -15,7 +15,7 @@ interface Profile {
 export default function HomePage() {
   const [psychologists, setPsychologists] = useState<Profile[]>([])
   const [showWizard, setShowWizard] = useState(false)
-  const [user, setUser] = useState<{ id: string } | null>(null)
+  const [user, setUser] = useState<{ id: string; role?: string } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -40,10 +40,29 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Psikolog Platform</h1>
-        <a href="/auth/login" className="text-sm bg-black text-white px-4 py-2 rounded-lg">
-          Giris Yap
-        </a>
+        <h1 className="text-xl font-semibold text-gray-900">Psikolog<span className="text-violet-600">.</span></h1>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <a
+              href={user.role === 'psychologist' ? '/psychologist' : '/client'}
+              className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors"
+            >
+              Hesabım
+            </a>
+          ) : (
+            <>
+              <a href="/psikolog-ol" className="text-sm text-gray-500 hover:text-gray-700">
+                Psikolog olarak katılın
+              </a>
+              <a href="/auth/kaydol" className="text-sm border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                Kayıt Ol
+              </a>
+              <a href="/auth/login" className="text-sm bg-black text-white px-4 py-2 rounded-lg">
+                Giriş Yap
+              </a>
+            </>
+          )}
+        </div>
       </header>
 
       <section className="max-w-5xl mx-auto px-6 py-12">

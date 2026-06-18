@@ -20,25 +20,20 @@ export async function POST(req: Request) {
     .in('option_id', optionIds)
 
   // Meta degerleri cek (cinsiyet tercihi vb.) — dinamik, hardcoded ID yok
-  const { data: optionMetas, error: metaError } = await supabase
-  .from('question_options')
-  .select('id, meta_value, question:question_options_question_id_fkey(meta_key)')
-  .in('id', optionIds)
-  .not('meta_value', 'is', null)
-
-console.log('optionMetas:', optionMetas, metaError)
+  const { data: optionMetas } = await supabase
+    .from('question_options')
+    .select('id, meta_value, question:question_options_question_id_fkey(meta_key)')
+    .in('id', optionIds)
+    .not('meta_value', 'is', null)
 
   const scores = calculateScores(answers, optionSpecialties ?? [])
   const meta = extractMetaValues(answers, optionMetas ?? [])
 
   // Psikologlar ve slotlari ayri sorgula
-  const { data: profiles, error: profilesError } = await supabase
-  .from('profiles')
-  .select('id, full_name, bio, specialties, price_per_session, avatar_url, gender')
-  .eq('is_approved', true)
-
-console.log('profiles error:', profilesError)
-console.log('profiles:', profiles)
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name, bio, specialties, price_per_session, avatar_url, gender')
+    .eq('is_approved', true)
 
   const { data: slots } = await supabase
     .from('slots')
@@ -52,12 +47,6 @@ console.log('profiles:', profiles)
   }))
 
   const matched = matchPsychologists(scores, psychologists, meta)
-
-  console.log('meta:', meta)
-  console.log('scores:', scores)
-  console.log('profiles count:', profiles?.length)
-  console.log('slots count:', slots?.length)
-  console.log('matched count:', matched.length)
 
   // Giris yapmis kullanicinin assessment'ini kaydet
   if (user) {

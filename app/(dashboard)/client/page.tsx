@@ -1,16 +1,65 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import ClientDashboard from './ClientDashboard'
 
-export default async function ClientDashboard() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = { from: (table: string) => any }
+
+export default async function ClientDashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login?next=/client')
 
-  if (!user) redirect('/login')
+  const db = supabase as unknown as AnyClient
+
+  const { data: userProfile } = await db
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', user.id)
+    .single() as { data: { full_name: string; avatar_url: string | null } | null }
+
+  const { data: activePayment } = await db
+    .from('payments')
+    .select('id, total_sessions_credited, sessions_used, psychologist_id')
+    .eq('client_id', user.id)
+    .eq('status', 'paid')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single() as { data: { id: string; total_sessions_credited: number; sessions_used: number; psychologist_id: string } | null }
+
+  let psychologistProfile = null
+  if (activePayment?.psychologist_id) {
+    const { data } = await db
+      .from('profiles')
+      .select('id, full_name, avatar_url, bio, specialties')
+      .eq('id', activePayment.psychologist_id)
+      .single() as { data: { id: string; full_name: string; avatar_url: string | null; bio: string | null; specialties: string[] } | null }
+    psychologistProfile = data
+  }
+
+  const { data: upcomingAppointments } = await db
+    .from('appointments')
+    .select('id, status, slot_id, meeting_room_url, slot_start_time')
+    .eq('client_id', user.id)
+    .in('status', ['pending_approval', 'scheduled'])
+    .order('slot_start_time', { ascending: true })
+    .limit(5) as { data: { id: string; status: string; slot_id: string; meeting_room_url: string | null; slot_start_time: string | null }[] | null }
+
+  const { data: notifications } = await db
+    .from('notifications')
+    .select('id, title, description, is_read, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(10) as { data: { id: string; title: string; description: string; is_read: boolean; created_at: string }[] | null }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-2xl font-bold text-gray-900">Hosgeldiniz</h1>
-      <p className="text-gray-500 mt-2">{user.email}</p>
-    </main>
+    <ClientDashboard
+      userName={userProfile?.full_name ?? user.email ?? 'Kullanıcı'}
+      userAvatar={userProfile?.avatar_url ?? null}
+      activePayment={activePayment ?? null}
+      psychologist={psychologistProfile}
+      upcomingAppointments={upcomingAppointments ?? []}
+      notifications={notifications ?? []}
+    />
   )
 }

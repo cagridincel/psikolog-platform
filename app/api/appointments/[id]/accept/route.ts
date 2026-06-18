@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
-import { createRoom, createMeetingToken } from '@/lib/daily'
+import { createRoom } from '@/lib/daily'
 import { sendNotifications } from '@/lib/notifications'
+import type { AppointmentRow } from '@/types/database.types'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = { from: (table: string) => any }
 
 export async function POST(
   _req: Request,
@@ -18,7 +21,7 @@ export async function POST(
     .select('*')
     .eq('id', appointmentId)
     .eq('psychologist_id', user.id)
-    .single() as { data: any; error: any }
+    .single() as { data: AppointmentRow | null; error: unknown }
 
   if (fetchError || !appointment) {
     return NextResponse.json({ error: 'Randevu bulunamadi' }, { status: 404 })
@@ -28,14 +31,13 @@ export async function POST(
     return NextResponse.json({ error: 'Bu randevu zaten islendi' }, { status: 409 })
   }
 
-  const service = createServiceRoleClient() as any
+  const service = createServiceRoleClient() as unknown as AnyClient
 
   try {
     const scheduledAt = new Date(
       appointment.slot_start_time ?? appointment.created_at
     )
 
-    // Daily.co key yoksa dummy URL kullan
     let roomUrl = `https://meet.daily.co/session-${appointmentId}`
 
     if (process.env.DAILY_API_KEY) {

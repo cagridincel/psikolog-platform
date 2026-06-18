@@ -10,14 +10,14 @@ export async function GET(req: Request) {
   const start = searchParams.get('start')
   const end = searchParams.get('end')
 
-  const query = supabase
+  let query = supabase
     .from('slots')
     .select('id, start_time, end_time, status')
     .eq('psychologist_id', user.id)
     .order('start_time')
 
-  if (start) query.gte('start_time', start)
-  if (end) query.lt('start_time', end)
+  if (start) query = query.gte('start_time', start)
+  if (end) query = query.lt('start_time', end)
 
   const { data } = await query
   return NextResponse.json(data ?? [])

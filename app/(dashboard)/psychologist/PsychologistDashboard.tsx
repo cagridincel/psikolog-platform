@@ -19,37 +19,72 @@ interface Appointment {
   profiles: { full_name: string; avatar_url: string | null } | null
 }
 
+interface Stats {
+  totalSessions: number
+  pendingCount: number
+  totalClients: number
+  availableSlots: number
+}
+
+interface Notification {
+  id: string
+  title: string
+  description: string
+  is_read: boolean
+  created_at: string
+}
+
+interface Profile {
+  id: string
+  full_name: string
+  avatar_url: string | null
+  specialties: string[]
+  bio: string | null
+  price_per_session: number | null
+}
+
 interface Props {
   psychologistId: string
-  profile: { id: string; full_name: string }
+  profile: Profile
   slots: Slot[]
   appointments: Appointment[]
   weekStart: string
+  stats: Stats
+  notifications: Notification[]
 }
 
-export default function PsychologistDashboard({ psychologistId, profile, slots: initialSlots, appointments, weekStart }: Props) {
+function formatRelative(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}dk önce`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}sa önce`
+  return `${Math.floor(hours / 24)}g önce`
+}
+
+export default function PsychologistDashboard({
+  profile, slots: initialSlots, appointments, weekStart, stats, notifications,
+}: Props) {
   const [slots, setSlots] = useState<Slot[]>(initialSlots)
   const [weekOffset, setWeekOffset] = useState(0)
   const [currentWeekStart, setCurrentWeekStart] = useState(new Date(weekStart))
   const [selectedCell, setSelectedCell] = useState<{ date: Date; hour: number } | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'notifications'>('calendar')
+
+  const unreadCount = notifications.filter(n => !n.is_read).length
+  const pendingAppointments = appointments.filter(a => a.status === 'pending_approval')
 
   const getAppointmentForSlot = useCallback((slotId: string) => {
-    console.log('looking for slot:', slotId, 'in appointments:', appointments)
     return appointments.find((a) => a.slot_id === slotId) ?? null
   }, [appointments])
 
   async function fetchWeekSlots(start: Date) {
     const end = new Date(start)
     end.setDate(start.getDate() + 7)
-    const res = await fetch(
-      `/api/psychologist/slots?start=${start.toISOString()}&end=${end.toISOString()}`
-    )
-    if (res.ok) {
-      const data = await res.json()
-      setSlots(data)
-    }
+    const res = await fetch(`/api/psychologist/slots?start=${start.toISOString()}&end=${end.toISOString()}`)
+    if (res.ok) setSlots(await res.json())
   }
 
   async function handleWeekChange(direction: 'prev' | 'next') {
@@ -71,7 +106,6 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
   }
 
   async function handleCellClick(date: Date, hour: number) {
-    // Bu hücrede slot var mı?
     const existing = slots.find((s) => {
       const slotDate = new Date(s.start_time)
       return (
@@ -81,15 +115,10 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
         slotDate.getHours() === hour
       )
     })
-
-    console.log('clicked hour:', hour, 'existing slot:', existing, 'all slots:', slots)
-
-
     if (existing) {
       setSelectedSlot(existing)
       setSelectedCell(null)
     } else {
-      // Geçmiş saatlere slot eklenemez
       const cellTime = new Date(date)
       cellTime.setHours(hour, 0, 0, 0)
       if (cellTime < new Date()) return
@@ -101,26 +130,19 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
   async function handleAddSlot() {
     if (!selectedCell) return
     setLoading(true)
-
     const startTime = new Date(selectedCell.date)
     startTime.setHours(selectedCell.hour, 0, 0, 0)
     const endTime = new Date(startTime)
     endTime.setHours(startTime.getHours() + 1)
-
     const res = await fetch('/api/psychologist/slots', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-      }),
+      body: JSON.stringify({ start_time: startTime.toISOString(), end_time: endTime.toISOString() }),
     })
-
     if (res.ok) {
       const newSlot = await res.json()
       setSlots((prev) => [...prev, newSlot])
     }
-
     setSelectedCell(null)
     setLoading(false)
   }
@@ -128,9 +150,7 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
   async function handleDeleteSlot(slotId: string) {
     setLoading(true)
     const res = await fetch(`/api/psychologist/slots/${slotId}`, { method: 'DELETE' })
-    if (res.ok) {
-      setSlots((prev) => prev.filter((s) => s.id !== slotId))
-    }
+    if (res.ok) setSlots((prev) => prev.filter((s) => s.id !== slotId))
     setSelectedSlot(null)
     setLoading(false)
   }
@@ -156,46 +176,230 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
   }
 
   const selectedAppointment = selectedSlot ? getAppointmentForSlot(selectedSlot.id) : null
-  console.log('selectedAppointment full:', JSON.stringify(selectedAppointment))
-
 
   return (
-    <main className="min-h-screen bg-[#F8F7F4]">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">{profile.full_name}</h1>
-          <p className="text-sm text-gray-400">Psikolog Paneli</p>
+    <div className="flex min-h-screen bg-[#F5F5F7]">
+      {/* Sidebar */}
+      <aside className="w-56 bg-white border-r border-gray-100 flex flex-col py-6 px-4 fixed h-full z-20">
+        <div className="mb-8 px-2">
+          <span className="text-lg font-bold text-gray-900 tracking-tight">Psikolog<span className="text-violet-600">.</span></span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#E8F5E9] border border-[#81C784] inline-block"/>Onaylı</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#FFF8E1] border border-[#FFD54F] inline-block"/>Onay Bekliyor</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#E3F2FD] border border-[#90CAF9] inline-block"/>Uygun</span>
+
+        <nav className="flex flex-col gap-1 flex-1">
+          {[
+            { id: 'calendar', label: 'Takvim', icon: CalendarIcon },
+            { id: 'clients', label: 'Danışanlarım', icon: PersonIcon },
+            { id: 'notifications', label: 'Bildirimler', icon: BellIcon, badge: unreadCount },
+          ].map(({ id, label, icon: Icon, badge }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as typeof activeTab)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                activeTab === id
+                  ? 'bg-violet-50 text-violet-700'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              }`}
+            >
+              <Icon active={activeTab === id} />
+              {label}
+              {badge ? (
+                <span className="ml-auto bg-violet-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+
+        {/* Profil */}
+        <div className="flex items-center gap-3 px-2 pt-4 border-t border-gray-100">
+          <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-sm font-semibold flex-shrink-0 overflow-hidden">
+            {profile.avatar_url
+              ? <img src={profile.avatar_url} className="w-8 h-8 object-cover" alt="" />
+              : profile.full_name[0]}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-gray-800 truncate">{profile.full_name}</p>
+            <p className="text-xs text-gray-400">Psikolog</p>
           </div>
         </div>
-      </header>
+      </aside>
 
-      {/* Takvim */}
-      <div className="p-6">
-        <WeeklyCalendar
-          weekStart={currentWeekStart}
-          slots={slots}
-          appointments={appointments}
-          onCellClick={handleCellClick}
-          onWeekChange={handleWeekChange}
-          onThisWeek={handleThisWeek}
-          weekOffset={weekOffset}
-        />
-      </div>
+      {/* Main */}
+      <main className="ml-56 flex-1 flex min-w-0">
+        <div className="flex-1 min-w-0 p-6">
+
+          {/* Takvim tab */}
+          {activeTab === 'calendar' && (
+            <div className="space-y-5">
+              {/* İstatistik kartları */}
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { label: 'Tamamlanan Seans', value: stats.totalSessions, color: 'text-green-600', bg: 'bg-green-50' },
+                  { label: 'Onay Bekliyor', value: stats.pendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
+                  { label: 'Toplam Danışan', value: stats.totalClients, color: 'text-violet-600', bg: 'bg-violet-50' },
+                  { label: 'Uygun Slot', value: stats.availableSlots, color: 'text-blue-600', bg: 'bg-blue-50' },
+                ].map(({ label, value, color, bg }) => (
+                  <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4">
+                    <p className="text-xs text-gray-400 mb-2">{label}</p>
+                    <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Onay bekleyen talep varsa banner */}
+              {pendingAppointments.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-4">
+                  <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-amber-800">
+                      {pendingAppointments.length} onay bekleyen randevu talebi var
+                    </p>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      {pendingAppointments.map(a => a.profiles?.full_name ?? 'Danışan').join(', ')} tarafından talep gönderildi.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Takvim renk göstergesi */}
+              <div className="flex items-center gap-1 justify-end">
+                <div className="flex items-center gap-4 text-xs text-gray-400 bg-white border border-gray-100 rounded-xl px-4 py-2">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#E8F5E9] border border-[#81C784] inline-block"/>Onaylı</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#FFF8E1] border border-[#FFD54F] inline-block"/>Onay Bekliyor</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#E3F2FD] border border-[#90CAF9] inline-block"/>Uygun</span>
+                </div>
+              </div>
+
+              {/* Takvim */}
+              <WeeklyCalendar
+                weekStart={currentWeekStart}
+                slots={slots}
+                appointments={appointments}
+                onCellClick={handleCellClick}
+                onWeekChange={handleWeekChange}
+                onThisWeek={handleThisWeek}
+                weekOffset={weekOffset}
+              />
+            </div>
+          )}
+
+          {/* Danışanlar tab */}
+          {activeTab === 'clients' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-900">Danışanlarım</h2>
+              {appointments.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+                  <p className="text-gray-400">Henüz aktif danışan bulunmuyor.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                  {appointments.map((apt) => (
+                    <div key={apt.id} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-semibold text-sm flex-shrink-0 overflow-hidden">
+                        {apt.profiles?.avatar_url
+                          ? <img src={apt.profiles.avatar_url} className="w-10 h-10 object-cover" alt="" />
+                          : (apt.profiles?.full_name?.[0] ?? '?')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800">{apt.profiles?.full_name ?? 'Danışan'}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Seans #{apt.id.slice(0, 6)}</p>
+                      </div>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                        apt.status === 'scheduled'
+                          ? 'bg-green-50 text-green-700'
+                          : 'bg-amber-50 text-amber-700'
+                      }`}>
+                        {apt.status === 'scheduled' ? 'Onaylı' : 'Onay Bekliyor'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bildirimler tab */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-gray-900">Bildirimler</h2>
+              {notifications.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+                  <p className="text-gray-400">Henüz bildirim yok.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                  {notifications.map(n => (
+                    <div key={n.id} className={`flex items-start gap-4 px-6 py-4 ${!n.is_read ? 'bg-violet-50/50' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!n.is_read ? 'bg-violet-500' : 'bg-transparent'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800">{n.title}</p>
+                        <p className="text-sm text-gray-500 mt-0.5">{n.description}</p>
+                      </div>
+                      <span className="text-xs text-gray-400 flex-shrink-0">{formatRelative(n.created_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sağ panel */}
+        <div className="w-64 p-6 flex-shrink-0 hidden xl:block">
+          {/* Profil özeti */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-700 text-2xl font-bold mb-3 overflow-hidden">
+                {profile.avatar_url
+                  ? <img src={profile.avatar_url} className="w-16 h-16 object-cover" alt="" />
+                  : profile.full_name[0]}
+              </div>
+              <p className="font-semibold text-gray-900 text-sm">{profile.full_name}</p>
+              {profile.price_per_session && (
+                <p className="text-xs text-gray-400 mt-0.5">₺{profile.price_per_session} / seans</p>
+              )}
+              <div className="flex flex-wrap gap-1 mt-3 justify-center">
+                {profile.specialties.slice(0, 2).map(s => (
+                  <span key={s} className="text-xs bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full">{s}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Son bildirimler */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Son Aktivite</p>
+            {notifications.length === 0 ? (
+              <p className="text-xs text-gray-400">Bildirim yok.</p>
+            ) : (
+              <div className="space-y-4">
+                {notifications.slice(0, 4).map(n => (
+                  <div key={n.id} className="flex items-start gap-2.5">
+                    <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${!n.is_read ? 'bg-violet-500' : 'bg-gray-200'}`} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-800 leading-tight">{n.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatRelative(n.created_at)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
 
       {/* Slot Modal */}
       {(selectedCell || selectedSlot) && (
         <SlotModal
           mode={selectedSlot
-            ? (selectedAppointment
-              ? selectedSlot.status === 'requested' ? 'approve' : 'detail'
-              : 'delete')
+            ? selectedSlot.status === 'requested'
+              ? 'approve'
+              : selectedSlot.status === 'booked'
+              ? 'detail'
+              : 'delete'
             : 'add'}
           slot={selectedSlot}
           appointment={selectedAppointment}
@@ -208,6 +412,37 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
           onClose={() => { setSelectedCell(null); setSelectedSlot(null) }}
         />
       )}
-    </main>
+    </div>
+  )
+}
+
+function CalendarIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
+}
+
+function PersonIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 00-3-3.87" />
+      <path d="M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  )
+}
+
+function BellIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 01-3.46 0" />
+    </svg>
   )
 }

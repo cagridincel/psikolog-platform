@@ -1,4 +1,6 @@
 import { createServiceRoleClient } from '@/lib/supabase/server'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = { from: (table: string) => any }
 
 interface SendNotificationParams {
   userId: string
@@ -7,13 +9,13 @@ interface SendNotificationParams {
 }
 
 export async function sendNotification({ userId, title, description }: SendNotificationParams) {
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClient() as unknown as AnyClient
   const { error } = await supabase.from('notifications').insert({ user_id: userId, title, description })
   if (error) throw error
 }
 
 export async function sendNotifications(notifications: SendNotificationParams[]) {
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClient() as unknown as AnyClient
   const { error } = await supabase.from('notifications').insert(
     notifications.map(({ userId, title, description }) => ({ user_id: userId, title, description }))
   )
@@ -26,7 +28,7 @@ export async function scheduleApprovalNotifications(
   psychologistId: string,
   createdAt: Date
 ) {
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClient() as unknown as AnyClient
 
   const schedules = [
     {
@@ -55,7 +57,7 @@ export async function scheduleApprovalNotifications(
 
 /** Zamanı gelmiş bekleyen bildirimleri gönderir — cron job tarafından çağrılır */
 export async function processPendingNotifications() {
-  const supabase = createServiceRoleClient()
+  const supabase = createServiceRoleClient() as unknown as AnyClient
 
   const { data: pending, error } = await supabase
     .from('notification_schedules')

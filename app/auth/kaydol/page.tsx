@@ -1,44 +1,67 @@
 'use client'
 
 import { useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Suspense } from 'react'
 
-function LoginForm() {
-  const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? ''
+function RegisterForm() {
   const router = useRouter()
 
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
+    if (password.length < 6) {
+      setError('Şifre en az 6 karakter olmalıdır.')
+      return
+    }
     setLoading(true)
     setError('')
 
     const supabase = createClient()
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (signInError || !data.user) {
-      setError('E-posta veya şifre hatalı.')
+    // 1. Supabase Auth kaydı
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+      },
+    })
+
+    if (signUpError || !data.user) {
+      setError(signUpError?.message ?? 'Kayıt sırasında bir hata oluştu.')
       setLoading(false)
       return
     }
 
-    if (next) { router.replace(next); return }
+    // 2. users + profiles tablosuna kayıt (API üzerinden)
+    if (data.session) {
+      // Session varsa hemen API'yi çağır
+      await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: fullName }),
+      })
+    }
+    // Session yoksa (email confirmation) callback'te register çağrılacak
 
-    const { data: userData } = await supabase
-      .from('users').select('role').eq('id', data.user.id).single() as { data: { role: string } | null }
+    // Email confirmation kapalıysa direkt yönlendir
+    if (data.session) {
+      router.replace('/client')
+    } else {
+      // Email confirmation açıksa onay bekleme ekranı göster
+      setSuccess(true)
+    }
 
-    const role = userData?.role
-    if (role === 'psychologist') router.replace('/psychologist')
-    else if (role === 'admin') router.replace('/admin')
-    else router.replace('/client')
+    setLoading(false)
   }
 
   async function handleGoogle() {
@@ -47,9 +70,31 @@ function LoginForm() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
+  }
+
+  if (success) {
+    return (
+      <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-sm text-center">
+          <div className="w-14 h-14 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">E-postanızı doğrulayın</h2>
+          <p className="text-sm text-gray-500">
+            <strong>{email}</strong> adresine bir doğrulama bağlantısı gönderdik. Bağlantıya tıklayarak hesabınızı aktif edin.
+          </p>
+          <a href="/auth/login" className="mt-6 inline-block text-sm text-violet-600 font-medium hover:underline">
+            Giriş sayfasına dön
+          </a>
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -59,10 +104,21 @@ function LoginForm() {
           <span className="text-lg font-bold text-gray-900 tracking-tight">Psikolog<span className="text-violet-600">.</span></span>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Giriş Yap</h1>
-        <p className="text-gray-500 text-sm mb-6">Hesabınıza erişin</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Hesap Oluştur</h1>
+        <p className="text-gray-500 text-sm mb-6">Ücretsiz kayıt olun</p>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Ad Soyad</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="Ad Soyad"
+              required
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">E-posta</label>
             <input
@@ -80,8 +136,9 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="En az 6 karakter"
               required
+              minLength={6}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             />
           </div>
@@ -95,7 +152,7 @@ function LoginForm() {
             disabled={loading}
             className="w-full bg-violet-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+            {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
           </button>
         </form>
 
@@ -119,25 +176,19 @@ function LoginForm() {
           {googleLoading ? 'Yönlendiriliyor...' : 'Google ile devam et'}
         </button>
 
-        <div className="mt-6 pt-6 border-t border-gray-100 text-center space-y-2">
-          <p className="text-sm text-gray-500">
-            Hesabınız yok mu?{' '}
-            <a href="/auth/kaydol" className="text-violet-600 font-medium hover:underline">Kayıt Ol</a>
-          </p>
-          <p className="text-sm text-gray-500">
-            Psikolog musunuz?{' '}
-            <a href="/psikolog-ol" className="text-violet-600 font-medium hover:underline">Başvurun</a>
-          </p>
-        </div>
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Zaten hesabınız var mı?{' '}
+          <a href="/auth/login" className="text-violet-600 font-medium hover:underline">Giriş Yap</a>
+        </p>
       </div>
     </main>
   )
 }
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <Suspense>
-      <LoginForm />
+      <RegisterForm />
     </Suspense>
   )
 }

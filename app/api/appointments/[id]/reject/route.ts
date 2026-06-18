@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 import { sendNotification } from '@/lib/notifications'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = { from: (table: string) => any }
 
 export async function POST(
   req: Request,
@@ -28,22 +30,22 @@ export async function POST(
     return NextResponse.json({ error: 'Bu randevu zaten islendi' }, { status: 409 })
   }
 
-  const service = createServiceRoleClient()
+  const service = createServiceRoleClient() as unknown as AnyClient
 
   try {
     // 1. Randevuyu iptal et
     await service.from('appointments').update({
-      status: 'cancelled',
+      status: 'cancelled' as const,
       rejection_reason: reason || 'Psikolog tarafindan reddedildi',
       rejected_at: new Date().toISOString(),
     }).eq('id', appointmentId)
 
     // 2. Slotu serbest birak
-    await service.from('slots').update({ status: 'available' }).eq('id', appointment.slot_id)
+    await service.from('slots').update({ status: 'available' as const }).eq('id', appointment.slot_id)
 
     // 3. Paketi iptal et
     await service.from('payments').update({
-      status: 'cancelled',
+      status: 'cancelled' as const,
       cancelled_at: new Date().toISOString(),
       cancelled_reason: 'Psikolog randevu talebini reddetti',
     }).eq('id', appointment.payment_id)
