@@ -1,280 +1,331 @@
-# Psikolog Platform — Proje Bağlamı
+# CLAUDE.md — Psikolog Platform
 
-Bu dosya Claude AI için proje bağlamını özetler. Yeni bir sohbette GitHub reposunu paylaşınca buradan devam edebiliriz.
+Son güncelleme: 18 Haziran 2026  
+Stack: Next.js 15 (App Router) · Supabase · Daily.co · İyzico (test modu) · Tailwind CSS v4 · TypeScript · Vercel
+
+---
 
 ## Proje Özeti
 
-Online psikoloji seans platformu. Müşteriler psikologlarla eşleşiyor, paket satın alıyor, görüntülü seans yapıyor.
+Online psikoloji seans platformu. Müşteriler psikolog seçer, slot rezerve eder, paket satın alır. Psikologlar takvim yönetir, randevu onaylar/reddeder. Video seans Daily.co üzerinden gerçekleşir.
 
-## Tech Stack
+---
 
-- **Frontend/Backend:** Next.js 15 (App Router, Server Components)
-- **Veritabanı:** Supabase (PostgreSQL + RLS)
-- **Auth:** Supabase Auth (Google OAuth)
-- **Video görüşme:** Daily.co
-- **Ödeme:** İyzico (entegrasyon henüz tamamlanmadı)
-- **Deploy:** Vercel (henüz deploy edilmedi)
-- **Dil:** TypeScript
-
-## Klasör Yapısı
+## Dosya Yapısı
 
 ```
-psikolog-platform/
-├── app/
-│   ├── (auth)/
-│   │   — YOK, bunun yerine:
+app/
+├── page.tsx                          # Ana sayfa — psikolog listesi + AssessmentWizard
+├── layout.tsx                        # Root layout
+├── globals.css                       # Tailwind v4
+│
+├── (dashboard)/
+│   ├── client/
+│   │   ├── page.tsx                  # Müşteri dashboard — data fetch
+│   │   ├── ClientDashboard.tsx       # Müşteri dashboard UI (sidebar + tabs)
+│   │   ├── book/[psychologistId]/
+│   │   │   ├── page.tsx              # Slot seçim sayfası — data fetch
+│   │   │   └── BookingPage.tsx       # Slot seçim UI
+│   │   └── checkout/
+│   │       ├── page.tsx              # Checkout — data fetch
+│   │       └── CheckoutPage.tsx      # Checkout UI (paket + ödeme)
+│   │
+│   └── psychologist/
+│       ├── page.tsx                  # Psikolog dashboard — data fetch + istatistikler
+│       └── PsychologistDashboard.tsx # Psikolog dashboard UI (sidebar + takvim)
+│
+├── api/
+│   ├── me/route.ts                   # GET — oturum kullanıcısı + role
+│   ├── psychologists/route.ts        # GET — onaylı psikolog listesi
+│   ├── psychologist/
+│   │   ├── route.ts                  # GET — onaylı psikolog listesi (duplicate, silinecek)
+│   │   ├── slots/route.ts            # GET (haftalık) + POST (slot ekle)
+│   │   ├── slots/[slotId]/route.ts   # DELETE (slot sil)
+│   │   └── finalize/route.ts         # POST — psikolog başvuru profil güncelle
+│   ├── appointments/
+│   │   ├── create/route.ts           # POST — paketten randevu oluştur
+│   │   ├── [id]/accept/route.ts      # POST — randevu onayla + Daily.co oda oluştur
+│   │   └── [id]/reject/route.ts      # POST — randevu reddet + alternatif öner
+│   ├── payments/
+│   │   └── initiate/route.ts         # POST — TEST MODU: payment + appointment oluştur
+│   ├── assessment/route.ts           # POST — soru cevaplarını al, psikolog eşleştir
+│   ├── questions/route.ts            # GET — soru ağacı
 │   ├── auth/
-│   │   ├── login/page.tsx          # Google OAuth login sayfası
-│   │   └── callback/route.ts       # OAuth callback handler
-│   ├── (dashboard)/
-│   │   ├── client/
-│   │   │   ├── page.tsx            # Müşteri dashboard (temel)
-│   │   │   ├── book/[psychologistId]/
-│   │   │   │   ├── page.tsx        # Slot seçim sayfası (server)
-│   │   │   │   └── BookingPage.tsx # Slot seçim sayfası (client)
-│   │   │   └── checkout/
-│   │   │       ├── page.tsx        # Ödeme sayfası (server)
-│   │   │       └── CheckoutPage.tsx # Ödeme sayfası (client)
-│   │   └── psychologist/
-│   │       ├── page.tsx            # Psikolog dashboard (server)
-│   │       └── PsychologistDashboard.tsx # Haftalık takvim (client)
-│   ├── api/
-│   │   ├── assessment/route.ts     # Soru ağacı değerlendirme + eşleştirme
-│   │   ├── questions/route.ts      # Soru ağacını çeker
-│   │   ├── psychologists/route.ts  # Onaylı psikolog listesi
-│   │   ├── me/route.ts             # Mevcut kullanıcı bilgisi
-│   │   ├── appointments/
-│   │   │   └── [id]/
-│   │   │       ├── accept/route.ts # Randevu kabul
-│   │   │       └── reject/route.ts # Randevu red + alternatif öneri
-│   │   ├── psychologist/
-│   │   │   └── slots/
-│   │   │       ├── route.ts        # Slot GET + POST
-│   │   │       └── [slotId]/route.ts # Slot DELETE
-│   │   ├── payments/
-│   │   │   └── initiate/route.ts   # İyzico ödeme başlatma (YAPILACAK)
-│   │   └── cron/
-│   │       └── check-notifications/route.ts # 24h timeout kontrolü
-├── components/
-│   ├── assessment/
-│   │   └── AssessmentWizard.tsx    # Soru ağacı wizard modal
-│   └── calendar/
-│       ├── WeeklyCalendar.tsx      # Haftalık takvim grid
-│       └── SlotModal.tsx           # Slot ekleme/silme/onay modal
-├── hooks/
-│   ├── useNotifications.ts         # Realtime bildirim hook
-│   └── useCountdown.ts             # Seans geri sayım hook
-├── lib/
-│   ├── supabase/
-│   │   ├── client.ts               # Browser Supabase client
-│   │   └── server.ts               # Server Supabase client + service role
-│   ├── daily/index.ts              # Daily.co API wrapper
-│   ├── matching/index.ts           # Psikolog eşleştirme algoritması
-│   └── notifications.ts            # Bildirim helper + cron processor
-├── types/
-│   └── database.types.ts           # Tüm TypeScript tipleri
+│   │   └── register/route.ts         # POST — kayıt sonrası users+profiles oluştur
+│   └── cron/
+│       └── check-notifications/route.ts  # GET — zamanlanmış bildirimleri işle (her 5dk)
+│
+├── auth/
+│   ├── login/page.tsx                # Email/şifre + Google login
+│   ├── kaydol/page.tsx               # Email/şifre + Google kayıt
+│   ├── callback/route.ts             # OAuth callback — role'e göre yönlendir
+│   ├── callback/psikolog/route.ts    # Psikolog OAuth callback
+│   └── psikolog-tamamla/page.tsx     # Psikolog başvuru finalize (sessionStorage → API)
+│
+└── psikolog-ol/
+    ├── page.tsx
+    └── PsychologistApplyForm.tsx     # Psikolog başvuru formu
+
+components/
+├── assessment/AssessmentWizard.tsx   # Soru ağacı wizard (ana sayfada modal)
+└── calendar/
+    ├── WeeklyCalendar.tsx            # Haftalık takvim grid
+    └── SlotModal.tsx                 # Slot işlem modalı (add/delete/approve/detail)
+
+hooks/
+├── useNotifications.ts              # Realtime bildirim hook
+└── useCountdown.ts                  # Geri sayım hook
+
+lib/
 ├── supabase/
-│   └── migrations/
-│       ├── 001_initial_schema.sql
-│       ├── 002_schema_updates.sql
-│       ├── 003_question_tree.sql
-│       └── 004_packages.sql
-├── middleware.ts                    # Auth koruması (/client, /psychologist, /admin)
-└── vercel.json                      # Cron job config (5 dakikada bir)
+│   ├── client.ts                    # Browser client
+│   └── server.ts                    # Server client + createServiceRoleClient
+├── matching/index.ts                # Psikolog eşleştirme algoritması
+├── notifications.ts                 # Bildirim gönderme + zamanlama
+├── daily/index.ts                   # Daily.co oda oluşturma
+└── index.ts                         # Re-exports
+
+types/
+└── database.types.ts                # Tüm DB type'ları + Database shape
+
+middleware.ts                        # Auth — /client, /psychologist, /admin korur
+vercel.json                          # Cron: /api/cron/check-notifications her 5dk
 ```
 
-## Veritabanı Şeması (Özet)
+---
 
-### Tablolar
-- `users` — id, email, role (client/psychologist/admin)
-- `profiles` — id (FK→users), full_name, bio, specialties[], price_per_session, is_approved, gender
-- `slots` — id, psychologist_id, start_time, end_time, status (available/requested/booked)
-- `payments` — id, client_id, psychologist_id, package_id, amount_paid, total_sessions_credited, sessions_used, status, iyzico_payment_id, cancelled_at
-- `appointments` — id, payment_id, client_id, psychologist_id, slot_id, status (pending_approval/scheduled/completed/cancelled/auto_cancelled), meeting_room_url, approval_deadline, rejection_reason
-- `completed_sessions` — id, appointment_id, outcome, clinical_notes (RLS ile sadece psikolog görebilir), client_joined_at, client_left_at, actual_duration_minutes
-- `notifications` — id, user_id, title, description, is_read
-- `notification_schedules` — 0/12/20. saat psikolog hatırlatmaları
-- `psychologist_recommendations` — red sonrası alternatif psikolog önerileri
-- `questions` — soru ağacı (meta_key ile cinsiyet gibi filtreler)
-- `question_options` — cevap seçenekleri (next_question_id ile dallanma, meta_value)
-- `option_specialties` — cevap → specialty ağırlık eşleşmesi
-- `client_assessments` — müşteri cevapları ve skorları
-- `packages` — 1/2/4/8 seans paketleri, indirim oranları (admin yönetir)
+## Önemli Mimari Kararlar
 
-### Önemli DB Notları
-- Tüm tablolarda RLS aktif
-- `completed_sessions.clinical_notes` — sadece psikolog görebilir (view ile korunuyor)
-- `current_user_role()` helper fonksiyonu var
-- `cancel_appointment()` ve `auto_reject_expired_appointments()` fonksiyonları var
-- Vercel cron ile her 5dk `auto_reject` çalışır
-- Supabase bölgesi şu an Sydney (ap-southeast-2) — production öncesi Frankfurt'a taşınmalı
+### Supabase Type Sorunu
+Supabase client `Database` generic'ini doğru resolve etmiyor — `update()` ve `insert()` parametreleri `never` dönüyor. **Geçici çözüm:** `AnyClient` pattern kullanılıyor:
 
-## Tamamlanan Özellikler
-
-- ✅ Veritabanı şeması (4 migration)
-- ✅ TypeScript tipleri
-- ✅ Next.js kurulumu + Supabase entegrasyonu
-- ✅ Google OAuth (login/callback)
-- ✅ Landing page (psikolog listesi + Supabase bağlantılı)
-- ✅ Soru ağacı assessment wizard (dinamik, DB'den yönetilir)
-- ✅ Psikolog eşleştirme algoritması (specialty skoru + cinsiyet filtresi)
-- ✅ Login akışı — "Seans Al" butonunda zorunlu, wizard'da serbest
-- ✅ Slot seçim sayfası (/client/book/[psychologistId])
-- ✅ Checkout sayfası — 4 paket kartı (1/2/4/8 seans), indirim hesaplama
-- ✅ Psikolog haftalık takvim dashboard
-- ✅ Slot ekleme/silme (takvim üzerinden)
-- ✅ Randevu kabul/red API'leri
-- ✅ 24 saat timeout + cron job
-- ✅ Bildirim sistemi (Realtime + zamanlamalı)
-- ✅ Alternatif psikolog öneri sistemi
-
-## Yapılacaklar
-
-### Kritik (production öncesi zorunlu)
-- ⏳ İyzico ödeme entegrasyonu + webhook handler
-- ⏳ `appointments/create` API route'u (paket hakkıyla randevu oluşturma)
-- ⏳ Callback route'da `users` tablosuna yazma sorunu (Google login sonrası public.users'a eklenmiyor)
-- ⏳ Müşteri dashboard (paket özeti, randevular, geri sayım sayacı)
-- ⏳ Daily.co video görüşme odası (müşteri + psikolog sayfaları)
-- ⏳ Klinik not sayfası (psikolog, seans sonrası)
-- ⏳ Supabase bölgesini Frankfurt'a taşı (yeni proje oluştur)
-- ⏳ Vercel deploy
-
-### Psikolog Dashboard (devam)
-- ⏳ Psikolog profil sayfası (/psychologist/profile)
-  - Ad, bio, uzmanlık alanları, fiyat, avatar, cinsiyet düzenleme
-  - Eğitim ve sertifika bilgileri (opsiyonel)
-- ⏳ Onaylı randevu detay modalı (danışan adı, geçmiş seans sayısı, "Seansa Katıl" butonu)
-- ⏳ Sarı slot (pending) tıklanınca danışan bilgisi + kabul/red akışı (UI tarafı)
-- ⏳ Klinik not girişi (seans sonrası)
-
-### Admin Paneli
-- ⏳ Psikolog yönetimi
-  - Başvuru listesi — onayla / reddet
-  - Profil düzenleme
-  - Aktif/pasif yapma
-  - **Direkt psikolog ekleme** — admin formu ile (ad, email, uzmanlık, fiyat, cinsiyet) → sistem davet emaili gönderir → psikolog link ile şifre belirler
-- ⏳ Müşteri yönetimi
-  - Müşteri listesi
-  - Paket geçmişi
-  - Seans geçmişi
-- ⏳ Paket yönetimi
-  - Paket ekleme/düzenleme/silme
-  - İndirim oranları
-  - "Popüler" etiketi toggle
-- ⏳ İstatistikler
-  - Tamamlanan seans sayısı
-  - Gelir özeti
-  - Aktif psikolog/müşteri sayısı
-
-### Sonraki aşama
-- ⏳ Müşteri geçmiş seanslar sayfası
-- ⏳ E-posta bildirimleri (Supabase veya Resend)
-- ⏳ Mobile responsive iyileştirmeler
-
-### Refactor (kod kalitesi — production öncesi)
-
-**🔴 Kritik:**
-- ⏳ `as any` kullanımını temizle — `accept/route.ts`, `psychologist/page.tsx`, `assessment/route.ts` başta olmak üzere tüm dosyalarda proper interface'ler yazılmalı
-- ⏳ Kök dizindeki `route.ts` dosyasını sil (yanlış yerde, işlevsiz)
-- ⏳ `public.users` yazma sorununu Supabase trigger ile çöz — Google login sonrası `auth.users`'a eklenen kullanıcı otomatik olarak `public.users`'a da eklensin:
-  ```sql
-  CREATE OR REPLACE FUNCTION handle_new_user()
-  RETURNS TRIGGER AS $$
-  BEGIN
-    INSERT INTO public.users (id, email, role)
-    VALUES (NEW.id, NEW.email, 'client')
-    ON CONFLICT (id) DO NOTHING;
-    INSERT INTO public.profiles (id, full_name, specialties, is_approved)
-    VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email), '{}', false)
-    ON CONFLICT (id) DO NOTHING;
-    RETURN NEW;
-  END;
-  $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-  CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION handle_new_user();
-  ```
-- ⏳ `JSON.parse(JSON.stringify(...))` hack'ini kaldır — Server→Client veri geçişinde proper DTO pattern kullan (sadece gerekli alanları seç, Proxy nesne geçirme)
-
-**🟡 İyileştirme:**
-- ⏳ API route'larında error handling güçlendir — try/catch eksik olan yerlere ekle, kullanıcıya anlamlı hata mesajları dön
-- ⏳ `appointments` sorgusundaki N+1 sorununu çöz — client profillerini ayrı sorguda çekiyoruz, Supabase'de doğru FK hint ile tek sorguda çekilebilir
-- ⏳ `lib/matching/index.ts`'de `(psych as any).gender` cast'ini kaldır — `ProfileRow`'a `gender` alanı ekle
-- ⏳ Console.log'ları tara ve temizle — debug sırasında eklenen log'lar production'a gitmemeli
-- ⏳ Middleware son halini kontrol et — `/auth` prefix'i korumalı listede olmamalı
-
-## Önemli Kararlar
-
-### Paket Yapısı
-- 4 paket: 1, 2, 4, 8 seans
-- İndirimler: 0%, 4%, 8%, 12%
-- "4 Seans" paketi "Popüler" olarak işaretli
-- Paketler admin panelinden yönetilir (`packages` tablosu)
-- **Paket tek psikologa bağlı** — kalan seanslar başka psikologla kullanılamaz
-
-### Randevu Akışı
-1. Ödeme tamamlanır → `payments` kaydı oluşur (status: paid)
-2. İlk slot için `appointments` oluşur (status: pending_approval)
-3. Slot kilitlenir (status: requested)
-4. Psikolog 24 saat içinde kabul/red eder
-5. Kabul → Daily.co odası oluşturulur, slot → booked
-6. Red/timeout → slot serbest, paket iptal, alternatif psikolog önerilir
-7. Kalan seanslar için ödeme yapılmadan yeni randevu oluşturulabilir
-
-### Login Akışı
-- Wizard (soru ağacı): login gerektirmez
-- "Seans Al" butonu: login zorunlu
-- Seçilen psikolog + slot URL params ile korunur
-
-### Eşleştirme Algoritması
-- `option_specialties` tablosunda her cevap seçeneği specialty'lere ağırlık verir
-- Müşteri cevapları toplanır, specialty skorları hesaplanır
-- Psikologların specialty listesi ile karşılaştırılır
-- Cinsiyet filtresi: `questions.meta_key = 'gender_preference'`, `question_options.meta_value = 'female/male/any'`
-- Dinamik — hardcoded ID yok, DB'den yönetilir
-- Max 3 psikolog önerilir, skora göre sıralı
-
-### Bildirim Sistemi
-- Psikolog talep aldığında: 0h, 12h, 20h hatırlatma
-- Vercel cron (her 5dk) pending bildirimleri işler
-- `CRON_SECRET` env var ile güvenlik
-
-### Video Görüşme
-- Daily.co — private room, max 2 katılımcı, kayıt yok (KVKK)
-- 60 dakika seans + 15 dakika buffer (75dk exp)
-- Psikolog = owner token, müşteri = normal token
-- Katılım/ayrılma anlık kaydedilir (session tracking)
-
-## Environment Variables (.env.local)
-
+```typescript
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = { from: (table: string) => any }
+const service = createServiceRoleClient() as unknown as AnyClient
 ```
+
+Bu pattern şu dosyalarda kullanılıyor: `accept/route.ts`, `reject/route.ts`, `create/route.ts`, `callback/route.ts`, `notifications.ts`, `psychologist/page.tsx`, `client/page.tsx`, `api/me/route.ts`
+
+**Kalıcı çözüm:** `npm run db:types` ile Supabase'in kendi type'larını generate et:
+```bash
+supabase gen types typescript --project-id <project-id> > types/database.types.ts
+```
+
+### Service Role Client
+RLS bypass gereken işlemlerde `createServiceRoleClient()` kullanılır. Sadece server-side API route'larında çağrılır, asla client'ta expose edilmez.
+
+### Middleware
+Sadece dashboard path'lerini korur — API route'larına dokunmaz:
+```typescript
+matcher: ['/client/:path*', '/psychologist/:path*', '/admin/:path*']
+```
+
+### Role Bazlı Yönlendirme
+`auth/callback/route.ts` — OAuth login sonrası `users.role`'e göre:
+- `client` → `/client`
+- `psychologist` → `/psychologist`  
+- `admin` → `/admin`
+- `next` query param varsa öncelikli kullanılır
+
+---
+
+## Auth Akışı
+
+### Müşteri Kaydı (Email)
+1. `/auth/kaydol` → `supabase.auth.signUp()`
+2. Session açılırsa → `POST /api/auth/register` → `users` + `profiles` insert
+3. `/client`'a yönlendir
+
+### Müşteri Kaydı (Google)
+1. `/auth/kaydol` veya `/auth/login` → `signInWithOAuth(google)`
+2. `/auth/callback` → yeni kullanıcıysa `users(role:client)` + `profiles` insert
+3. Role'e göre yönlendir
+
+### Psikolog Başvurusu
+1. `/psikolog-ol` → form doldur → sessionStorage'a kaydet
+2. Google ile giriş → `/auth/callback/psikolog`
+3. `users(role:psychologist)` + temel `profiles` insert
+4. `/auth/psikolog-tamamla` → sessionStorage'dan form verisi → `POST /api/psychologist/finalize`
+5. `/psychologist` → "Hesabınız inceleniyor" (is_approved: false)
+6. Admin Supabase'de `is_approved: true` yapar → tam erişim
+
+---
+
+## Randevu Akışı
+
+### Yeni Randevu (Test Modu)
+1. Ana sayfa → psikolog seç → `/client/book/[id]`
+2. Slot seç → aktif paket yoksa `/client/checkout`
+3. Checkout → `POST /api/payments/initiate` (TEST_MODE=true)
+4. `payments(status:paid)` + `appointments(status:pending_approval)` oluştur
+5. Slot → `requested`
+6. `scheduleApprovalNotifications()` çağrılır (0/12/20. saat hatırlatması)
+7. Psikolog panelinde sarı slot görünür
+
+### Aktif Paketten Randevu
+1. `/client/book/[id]` → aktif paket varsa "Randevu Talebi Gönder"
+2. `POST /api/appointments/create` → paket kontrol + appointment + slot güncelle
+
+### Psikolog Onaylama
+1. Sarı slot'a tıkla → `approve` modalı
+2. "Onayla" → `POST /api/appointments/[id]/accept`
+3. Daily.co oda oluştur (DAILY_API_KEY yoksa dummy URL)
+4. `appointments(status:scheduled)`, `slots(status:booked)`
+5. İki tarafa bildirim
+
+### Psikolog Reddetme
+1. `POST /api/appointments/[id]/reject`
+2. `appointments(status:cancelled)`, `slots(status:available)`, `payments(status:cancelled)`
+3. Alternatif psikolog önerileri DB'ye kayıt
+4. Müşteriye bildirim
+
+---
+
+## Psikolog Dashboard
+
+### Takvim
+- `WeeklyCalendar` — 08:00-21:00 arası, Pzt-Paz
+- Boş hücreye tıkla → `add` modalı → slot ekle
+- Mavi slot (available) → `delete` modalı
+- Sarı slot (requested) → `approve` modalı — danışan adı + onayla/reddet
+- Yeşil slot (booked) → `detail` modalı
+
+### Slot Status Mapping
+| Slot Status | Appointment Status | Renk   | Modal   |
+|-------------|-------------------|--------|---------|
+| available   | —                 | Mavi   | delete  |
+| requested   | pending_approval  | Sarı   | approve |
+| booked      | scheduled         | Yeşil  | detail  |
+| completed   | completed         | Gri    | —       |
+
+### Hafta Navigasyonu
+Hafta değiştirilince `/api/psychologist/slots?start=...&end=...` fetch edilir. Appointments state'i sayfa yüklendiğinde gelir, hafta değişince güncellenmez — sadece o haftanın slotları güncellenir.
+
+---
+
+## Bildirim Sistemi
+
+### Zamanlanmış Bildirimler (`notification_schedules` tablosu)
+Randevu oluşturunca `scheduleApprovalNotifications()` çağrılır:
+- `immediate` — hemen
+- `reminder_12h` — 12 saat sonra
+- `reminder_4h` — 20 saat sonra ("4 saat kaldı")
+
+Vercel cron her 5 dakikada `/api/cron/check-notifications` çağırır. Bu endpoint zamanı gelmiş bildirimleri işler. Authorization: `Bearer ${CRON_SECRET}` header gerekir.
+
+### Realtime Bildirimler
+`useNotifications` hook — Supabase Realtime ile `notifications` tablosunu dinler. Yeni kayıt gelince anında badge güncellenir.
+
+---
+
+## İyzico Entegrasyonu (TEST MODU)
+
+`api/payments/initiate/route.ts` dosyasında:
+```typescript
+const TEST_MODE = true  // ← İyzico aktif olunca false yap
+```
+
+Test modunda gerçek ödeme alınmaz, direkt `payments(status:paid)` kaydı oluşturulur.
+
+**İyzico aktif olunca yapılacaklar:**
+1. `TEST_MODE = false`
+2. `IYZICO_API_KEY` ve `IYZICO_SECRET_KEY` env'e ekle
+3. Route'taki `// TODO: İyzico` bloğunu doldur
+4. İyzico webhook'u için `/api/webhooks/iyzico` route'u yaz
+5. Checkout sayfasındaki test modu banner'ı kaldır
+
+---
+
+## Environment Variables
+
+```env
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+
+# Daily.co (opsiyonel — yoksa dummy URL kullanılır)
 DAILY_API_KEY=
-IYZICO_API_KEY=
-IYZICO_SECRET_KEY=
-IYZICO_BASE_URL=https://sandbox-api.iyzipay.com
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Vercel Cron güvenliği
 CRON_SECRET=
+
+# İyzico (henüz aktif değil)
+# IYZICO_API_KEY=
+# IYZICO_SECRET_KEY=
 ```
 
-## Test Verileri
+---
 
-### Test Psikolog (DB'de, auth kullanıcısı değil)
-- ID: `11111111-1111-1111-1111-111111111111`
-- Email: `psikolog@test.com`
-- Ad: Dr. Ayse Kaya
-- Gender: female
-- Specialties: Anksiyete, Depresyon, Stres, Çift Terapisi, Kişisel Gelişim
-- Price: 500 TL/seans
+## Veritabanı Tabloları
 
-### Geliştirici Hesabı
-- Email: cagridincel@gmail.com
-- Role: psychologist (geçici, test için)
-- is_approved: true
+| Tablo | Açıklama |
+|-------|----------|
+| `users` | Auth kullanıcıları — id, email, role |
+| `profiles` | Profil bilgileri — full_name, avatar_url, bio, specialties, price_per_session, is_approved, gender |
+| `slots` | Psikolog müsaitlik slotları — start_time, end_time, status |
+| `payments` | Ödeme paketleri — amount_paid, total_sessions_credited, sessions_used, status |
+| `appointments` | Randevular — payment_id, client_id, psychologist_id, slot_id, status, meeting_room_url |
+| `notifications` | Anlık bildirimler — user_id, title, description, is_read |
+| `notification_schedules` | Zamanlanmış bildirimler — scheduled_at, is_sent, notification_type |
+| `psychologist_recommendations` | Red sonrası alternatif öneriler |
+| `packages` | Seans paket tanımları (henüz doldurulmadı) |
+| `questions` | Assessment soru ağacı |
+| `question_options` | Soru seçenekleri — next_question_id, meta_value |
+| `option_specialties` | Seçenek → uzmanlık ağırlığı |
+| `client_assessments` | Müşteri assessment sonuçları |
 
-## GitHub Repo
-https://github.com/cagridincel/psikolog-platform
+---
+
+## Yapılacaklar (Öncelik Sırasına Göre)
+
+### 🔴 Kritik
+1. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
+2. **Daily.co video sayfası** — `/seans/[appointmentId]` sayfası yok, "Seansa Katıl" linki açık URL'e gidiyor, iframe ile sarmalanmalı
+
+### 🟡 Önemli
+3. **Psikolog profil düzenleme** — bio, fiyat, uzmanlık, avatar güncelleme sayfası yok (`/psychologist/profile`)
+4. **Klinik not sayfası** — seans sonrası psikolog notları (`/psychologist/notes/[appointmentId]`)
+5. **Şifre sıfırlama** — `/auth/sifre-sifirla` sayfası yok
+6. **Admin paneli** — psikolog onayı için basit liste + toggle (`/admin`)
+
+### 🟢 Nice to Have
+7. **`supabase gen types`** — `AnyClient` hack'ini kaldır, gerçek type'lar kullan
+8. **`packages` tablosunu doldur** — 1/3/6 seanslık paket tanımları ekle, checkout'ta göster
+9. **Duplicate dosyalar silinmeli:**
+   - `app/api/psychologists - Kopya/` klasörü (boşluk içeriyor, manuel sil)
+   - `app/api/psychologist/route.ts` (`psychologists/route.ts` ile aynı içerik)
+   - `app/api/cron/check-notifications/cron_route.ts` (eski isim, `route.ts` var)
+   - `app/api/psychologists/slots/` (eski route'lar, `psychologist/slots/` kullanılıyor)
+10. **Console.log temizliği** — `payments/initiate/route.ts`'te debug log kaldı
+
+---
+
+## Bilinen Sorunlar
+
+- **Psikolog başvuru formu** — sessionStorage kullanıyor çünkü OAuth callback server-side. Alternatif: form verisini URL param veya DB draft olarak sakla.
+- **Hafta değişince appointments güncellenmez** — `PsychologistDashboard`'da `appointments` prop olarak geliyor, hafta değişince yeniden fetch edilmiyor. Geçici çözüm: sayfa refresh. Düzeltmek için `fetchWeekSlots` içinde appointments da fetch edilmeli.
+- **`packages` tablosu boş** — Checkout'ta paket kartları gösterilmiyor, varsayılan "1 Seans" kullanılıyor.
+- **Google OAuth + Psikolog başvurusu** — Daha önce Google ile giriş yapmış biri `/psikolog-ol`'dan başvurursa `existing` kullanıcı sayılıp rolü değişmez. Düzeltmek için callback'te rol update logic eklenmeli.
+
+---
+
+## Komutlar
+
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run lint         # ESLint
+npm run db:types     # Supabase type generate (bağlı proje gerekir)
+```
+
+---
+
+## Stil Notları
+
+- Renk paleti: violet-600 (#7C3AED) primary, gri tonları secondary
+- Sidebar genişliği: 256px (w-56)
+- Border radius: rounded-2xl (16px) kart standarttı
+- Dashboard layout: `fixed sidebar + ml-56 main + optional right panel`
+- Türkçe UI — tüm metinler Türkçe
