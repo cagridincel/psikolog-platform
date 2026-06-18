@@ -36,6 +36,7 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
   const [loading, setLoading] = useState(false)
 
   const getAppointmentForSlot = useCallback((slotId: string) => {
+    console.log('looking for slot:', slotId, 'in appointments:', appointments)
     return appointments.find((a) => a.slot_id === slotId) ?? null
   }, [appointments])
 
@@ -80,6 +81,9 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
         slotDate.getHours() === hour
       )
     })
+
+    console.log('clicked hour:', hour, 'existing slot:', existing, 'all slots:', slots)
+
 
     if (existing) {
       setSelectedSlot(existing)
@@ -152,6 +156,8 @@ export default function PsychologistDashboard({ psychologistId, profile, slots: 
   }
 
   const selectedAppointment = selectedSlot ? getAppointmentForSlot(selectedSlot.id) : null
+  console.log('selectedAppointment full:', JSON.stringify(selectedAppointment))
+
 
   return (
     <main className="min-h-screen bg-[#F8F7F4]">

@@ -78,20 +78,22 @@ export default function SlotModal({ mode, slot, appointment, cell, loading, onAd
             </p>
           )}
 
-          {mode === 'approve' && appointment?.profiles && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{appointment.profiles.full_name}</p>
-                  <p className="text-xs text-gray-400">Seans talebi gönderdi</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">
-                Talebi onaylarsanız görüşme odası otomatik oluşturulur ve danışana bildirim gider.
-              </p>
-            </div>
-          )}
+{mode === 'approve' && (
+  <div>
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-10 h-10 bg-gray-100 rounded-full flex-shrink-0" />
+      <div>
+        <p className="text-sm font-semibold text-gray-900">
+          {appointment?.profiles?.full_name ?? 'Danışan'}
+        </p>
+        <p className="text-xs text-gray-400">Seans talebi gönderdi</p>
+      </div>
+    </div>
+    <p className="text-sm text-gray-500">
+      Talebi onaylarsanız görüşme odası otomatik oluşturulur.
+    </p>
+  </div>
+)}
 
           {mode === 'detail' && appointment?.profiles && (
             <div className="flex items-center gap-3">

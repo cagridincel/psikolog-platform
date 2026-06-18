@@ -7,11 +7,11 @@ export default async function Page() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/psychologist')
 
-  const { data: profile } = await supabase
+    const { data: profile } = await supabase
     .from('profiles')
     .select('id, full_name, is_approved')
     .eq('id', user.id)
-    .single()
+    .maybeSingle() as { data: { id: string; full_name: string; is_approved: boolean } | null }
 
   if (!profile?.is_approved) {
     return (
@@ -40,18 +40,35 @@ export default async function Page() {
     .lt('start_time', weekEnd.toISOString())
     .order('start_time')
 
-  const { data: appointments } = await supabase
+    const { data: appointments, error: aptError } = await supabase
     .from('appointments')
-    .select('id, slot_id, status, client_id, profiles!appointments_client_id_fkey(full_name, avatar_url)')
+    .select('id, slot_id, status, client_id')
     .eq('psychologist_id', user.id)
-    .in('status', ['pending_approval', 'scheduled'])
+    .in('status', ['pending_approval', 'scheduled']) as { data: any[] | null; error: any }
+  
+  // Client profillerini ayrı çek
+  const clientIds = (appointments ?? []).map((a: any) => a.client_id)
+  const { data: clientProfiles } = clientIds.length > 0
+    ? await supabase.from('profiles').select('id, full_name, avatar_url').in('id', clientIds)
+    : { data: [] }
+  
+  // Birleştir
+  const appointmentsWithProfiles = (appointments ?? []).map((a: any) => ({
+    ...a,
+    profiles: (clientProfiles ?? []).find((p: any) => p.id === a.client_id) ?? null
+  }))
+  
+  // Serialization için düz objeye çevir
+  const serializedAppointments = JSON.parse(JSON.stringify(appointmentsWithProfiles))
+  
+  console.log('appointmentsWithProfiles:', appointmentsWithProfiles)
 
   return (
     <PsychologistDashboard
       psychologistId={user.id}
       profile={profile}
       slots={slots ?? []}
-      appointments={(appointments ?? []) as any}
+      appointments={serializedAppointments}
       weekStart={weekStart.toISOString()}
     />
   )

@@ -15,10 +15,10 @@ export async function POST(
 
   const { data: appointment, error: fetchError } = await supabase
     .from('appointments')
-    .select('*, slots(start_time)')
+    .select('*')
     .eq('id', appointmentId)
     .eq('psychologist_id', user.id)
-    .single()
+    .single() as { data: any; error: any }
 
   if (fetchError || !appointment) {
     return NextResponse.json({ error: 'Randevu bulunamadi' }, { status: 404 })
@@ -28,45 +28,45 @@ export async function POST(
     return NextResponse.json({ error: 'Bu randevu zaten islendi' }, { status: 409 })
   }
 
-  const service = createServiceRoleClient()
+  const service = createServiceRoleClient() as any
 
   try {
     const scheduledAt = new Date(
-      appointment.slot_start_time ??
-      (appointment.slots as { start_time: string }).start_time
+      appointment.slot_start_time ?? appointment.created_at
     )
 
-    const room = await createRoom(appointmentId, scheduledAt)
-    const [clientToken, psychToken] = await Promise.all([
-      createMeetingToken(room.name, appointment.client_id, false),
-      createMeetingToken(room.name, user.id, true),
-    ])
+    // Daily.co key yoksa dummy URL kullan
+    let roomUrl = `https://meet.daily.co/session-${appointmentId}`
 
-    await service.from('appointments').update({
-      status: 'scheduled',
-      meeting_room_url: room.url,
-    }).eq('id', appointmentId)
+    if (process.env.DAILY_API_KEY) {
+      const room = await createRoom(appointmentId, scheduledAt)
+      roomUrl = room.url
+    }
 
-    await service.from('slots').update({ status: 'booked' }).eq('id', appointment.slot_id)
+    await service
+      .from('appointments')
+      .update({ status: 'scheduled', meeting_room_url: roomUrl })
+      .eq('id', appointmentId)
 
-    const startStr = scheduledAt.toLocaleString('tr-TR', {
-      day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
-    })
+    await service
+      .from('slots')
+      .update({ status: 'booked' })
+      .eq('id', appointment.slot_id)
 
     await sendNotifications([
       {
         userId: appointment.client_id,
         title: 'Randevunuz onaylandi!',
-        description: `${startStr} tarihli seansiniz onaylandi.`,
+        description: 'Psikologunuz randevunuzu onayladi.',
       },
       {
         userId: user.id,
         title: 'Randevu onaylandi',
-        description: `${startStr} tarihli seans takvime eklendi.`,
+        description: 'Randevu takvime eklendi.',
       },
     ])
 
-    return NextResponse.json({ success: true, roomUrl: room.url, clientToken, psychToken })
+    return NextResponse.json({ success: true, roomUrl })
   } catch (err) {
     console.error('Randevu onaylama hatasi:', err)
     return NextResponse.json({ error: 'Sunucu hatasi' }, { status: 500 })
