@@ -172,6 +172,39 @@ psikolog-platform/
 - ⏳ E-posta bildirimleri (Supabase veya Resend)
 - ⏳ Mobile responsive iyileştirmeler
 
+### Refactor (kod kalitesi — production öncesi)
+
+**🔴 Kritik:**
+- ⏳ `as any` kullanımını temizle — `accept/route.ts`, `psychologist/page.tsx`, `assessment/route.ts` başta olmak üzere tüm dosyalarda proper interface'ler yazılmalı
+- ⏳ Kök dizindeki `route.ts` dosyasını sil (yanlış yerde, işlevsiz)
+- ⏳ `public.users` yazma sorununu Supabase trigger ile çöz — Google login sonrası `auth.users`'a eklenen kullanıcı otomatik olarak `public.users`'a da eklensin:
+  ```sql
+  CREATE OR REPLACE FUNCTION handle_new_user()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    INSERT INTO public.users (id, email, role)
+    VALUES (NEW.id, NEW.email, 'client')
+    ON CONFLICT (id) DO NOTHING;
+    INSERT INTO public.profiles (id, full_name, specialties, is_approved)
+    VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email), '{}', false)
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+  ```
+- ⏳ `JSON.parse(JSON.stringify(...))` hack'ini kaldır — Server→Client veri geçişinde proper DTO pattern kullan (sadece gerekli alanları seç, Proxy nesne geçirme)
+
+**🟡 İyileştirme:**
+- ⏳ API route'larında error handling güçlendir — try/catch eksik olan yerlere ekle, kullanıcıya anlamlı hata mesajları dön
+- ⏳ `appointments` sorgusundaki N+1 sorununu çöz — client profillerini ayrı sorguda çekiyoruz, Supabase'de doğru FK hint ile tek sorguda çekilebilir
+- ⏳ `lib/matching/index.ts`'de `(psych as any).gender` cast'ini kaldır — `ProfileRow`'a `gender` alanı ekle
+- ⏳ Console.log'ları tara ve temizle — debug sırasında eklenen log'lar production'a gitmemeli
+- ⏳ Middleware son halini kontrol et — `/auth` prefix'i korumalı listede olmamalı
+
 ## Önemli Kararlar
 
 ### Paket Yapısı
