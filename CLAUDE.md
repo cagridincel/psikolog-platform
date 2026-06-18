@@ -137,14 +137,38 @@ psikolog-platform/
 - ⏳ Müşteri dashboard (paket özeti, randevular, geri sayım sayacı)
 - ⏳ Daily.co video görüşme odası (müşteri + psikolog sayfaları)
 - ⏳ Klinik not sayfası (psikolog, seans sonrası)
-- ⏳ Admin paneli (psikolog onaylama, paket yönetimi, istatistikler)
 - ⏳ Supabase bölgesini Frankfurt'a taşı (yeni proje oluştur)
 - ⏳ Vercel deploy
 
+### Psikolog Dashboard (devam)
+- ⏳ Psikolog profil sayfası (/psychologist/profile)
+  - Ad, bio, uzmanlık alanları, fiyat, avatar, cinsiyet düzenleme
+  - Eğitim ve sertifika bilgileri (opsiyonel)
+- ⏳ Onaylı randevu detay modalı (danışan adı, geçmiş seans sayısı, "Seansa Katıl" butonu)
+- ⏳ Sarı slot (pending) tıklanınca danışan bilgisi + kabul/red akışı (UI tarafı)
+- ⏳ Klinik not girişi (seans sonrası)
+
+### Admin Paneli
+- ⏳ Psikolog yönetimi
+  - Başvuru listesi — onayla / reddet
+  - Profil düzenleme
+  - Aktif/pasif yapma
+  - **Direkt psikolog ekleme** — admin formu ile (ad, email, uzmanlık, fiyat, cinsiyet) → sistem davet emaili gönderir → psikolog link ile şifre belirler
+- ⏳ Müşteri yönetimi
+  - Müşteri listesi
+  - Paket geçmişi
+  - Seans geçmişi
+- ⏳ Paket yönetimi
+  - Paket ekleme/düzenleme/silme
+  - İndirim oranları
+  - "Popüler" etiketi toggle
+- ⏳ İstatistikler
+  - Tamamlanan seans sayısı
+  - Gelir özeti
+  - Aktif psikolog/müşteri sayısı
+
 ### Sonraki aşama
-- ⏳ Psikolog profil düzenleme sayfası
 - ⏳ Müşteri geçmiş seanslar sayfası
-- ⏳ Psikolog onaylı randevu detay modalı (danışan geçmişi)
 - ⏳ E-posta bildirimleri (Supabase veya Resend)
 - ⏳ Mobile responsive iyileştirmeler
 
