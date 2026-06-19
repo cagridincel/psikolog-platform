@@ -54,7 +54,7 @@ export default function PsychologistApplyForm() {
 
   if (step === 'done') {
     return (
-      <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-6">
+      <main className="min-h-screen bg-[#F2F5F9] flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl border border-gray-100 p-10 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -72,7 +72,7 @@ export default function PsychologistApplyForm() {
 
   if (step === 'auth') {
     return (
-      <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-6">
+      <main className="min-h-screen bg-[#F2F5F9] flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl border border-gray-100 p-10 max-w-sm w-full text-center">
           <div className="w-12 h-12 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,7 +86,7 @@ export default function PsychologistApplyForm() {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 border border-[#E4EAF2] rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/>
@@ -105,7 +105,7 @@ export default function PsychologistApplyForm() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] py-12 px-6">
+    <main className="min-h-screen bg-[#F2F5F9] py-12 px-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -123,7 +123,7 @@ export default function PsychologistApplyForm() {
               value={form.full_name}
               onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
               placeholder="Dr. Ad Soyad"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full border border-[#E4EAF2] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A6BB5] focus:border-transparent"
               required
             />
           </div>
@@ -136,7 +136,7 @@ export default function PsychologistApplyForm() {
               onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
               placeholder="Deneyimlerinizi, yaklaşımınızı ve uzmanlık alanlarınızı kısaca anlatın..."
               rows={4}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+              className="w-full border border-[#E4EAF2] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A6BB5] focus:border-transparent resize-none"
               required
             />
           </div>
@@ -148,7 +148,7 @@ export default function PsychologistApplyForm() {
               <select
                 value={form.gender}
                 onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+                className="w-full border border-[#E4EAF2] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A6BB5] bg-white"
               >
                 <option value="">Belirtmek istemiyorum</option>
                 <option value="female">Kadın</option>
@@ -163,7 +163,7 @@ export default function PsychologistApplyForm() {
                 onChange={e => setForm(f => ({ ...f, price_per_session: e.target.value }))}
                 placeholder="800"
                 min="0"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full border border-[#E4EAF2] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A6BB5]"
                 required
               />
             </div>
@@ -181,8 +181,8 @@ export default function PsychologistApplyForm() {
                   onClick={() => toggleSpecialty(s)}
                   className={`text-sm px-3 py-1.5 rounded-full border transition-all ${
                     form.specialties.includes(s)
-                      ? 'bg-violet-600 border-violet-600 text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600'
+                      ? 'bg-[#1A6BB5] border-[#1A6BB5] text-white'
+                      : 'border-[#E4EAF2] text-gray-600 hover:border-[#5B9BD5] hover:text-[#1A6BB5]'
                   }`}
                 >
                   {s}
@@ -194,7 +194,7 @@ export default function PsychologistApplyForm() {
           <button
             type="submit"
             disabled={!form.full_name || !form.bio || form.specialties.length === 0 || !form.price_per_session}
-            className="w-full bg-violet-600 text-white py-4 rounded-2xl font-medium text-sm hover:bg-violet-700 transition-colors disabled:opacity-40"
+            className="w-full bg-[#1A6BB5] text-white py-4 rounded-2xl font-medium text-sm hover:opacity-90 transition-colors disabled:opacity-40"
           >
             Devam Et
           </button>

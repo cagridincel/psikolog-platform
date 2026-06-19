@@ -19,103 +19,111 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    fetch('/api/psychologists')
-      .then((r) => r.json())
-      .then((data) => setPsychologists(data ?? []))
-
-    fetch('/api/me')
-      .then((r) => r.json())
-      .then((data) => setUser(data?.user ?? null))
-      .catch(() => setUser(null))
+    fetch('/api/psychologists').then(r => r.json()).then(d => setPsychologists(d ?? []))
+    fetch('/api/me').then(r => r.json()).then(d => setUser(d?.user ?? null)).catch(() => setUser(null))
   }, [])
 
   function handleBooking(psychologistId: string) {
-    if (user) {
-      router.push(`/client/book/${psychologistId}`)
-    } else {
-      router.push(`/auth/login?next=/client/book/${psychologistId}`)
-    }
+    if (user) router.push(`/client/book/${psychologistId}`)
+    else router.push(`/auth/login?next=/client/book/${psychologistId}`)
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Psikolog<span className="text-violet-600">.</span></h1>
+    <main className="min-h-screen" style={{ background: '#F2F5F9' }}>
+      {/* Header */}
+      <header className="bg-white border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10" style={{ borderColor: '#E4EAF2' }}>
+        <div>
+          <span className="text-base font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Menta</span>
+          <span style={{ color: '#1A6BB5' }}>.</span>
+        </div>
+        <nav className="flex items-center gap-6">
+          <a href="#list" className="text-sm" style={{ color: '#8FA3BF' }}>Uzmanlar</a>
+          <a href="/psikolog-ol" className="text-sm" style={{ color: '#8FA3BF' }}>Psikolog olarak katılın</a>
+        </nav>
         <div className="flex items-center gap-3">
           {user ? (
-            <a
-              href={user.role === 'psychologist' ? '/psychologist' : '/client'}
-              className="text-sm bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors"
-            >
+            <a href={user.role === 'psychologist' ? '/psychologist' : '/client'}
+              className="text-sm font-medium px-4 py-2 rounded-lg text-white transition-opacity hover:opacity-90"
+              style={{ background: '#1A6BB5' }}>
               Hesabım
             </a>
           ) : (
             <>
-              <a href="/psikolog-ol" className="text-sm text-gray-500 hover:text-gray-700">
-                Psikolog olarak katılın
-              </a>
-              <a href="/auth/kaydol" className="text-sm border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              <a href="/auth/login" className="text-sm font-medium" style={{ color: '#1D3557' }}>Giriş Yap</a>
+              <a href="/auth/kaydol"
+                className="text-sm font-medium px-4 py-2 rounded-lg text-white"
+                style={{ background: '#1A6BB5' }}>
                 Kayıt Ol
-              </a>
-              <a href="/auth/login" className="text-sm bg-black text-white px-4 py-2 rounded-lg">
-                Giriş Yap
               </a>
             </>
           )}
         </div>
       </header>
 
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Uzman psikologlarla tanisin
-        </h2>
-        <p className="text-gray-500 mb-6">
-          Alaninda uzman, onaylilarla online seans alin.
+      {/* Hero */}
+      <section className="max-w-5xl mx-auto px-8 pt-16 pb-12">
+        <p className="text-xs font-medium mb-4" style={{ color: '#1A6BB5', letterSpacing: '0.1em' }}>SEÇİLMİŞ UZMANLAR · ONLINE SEANS</p>
+        <h1 className="text-4xl font-medium mb-4" style={{ color: '#1D3557', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          Zihinsel sağlığınız için<br />en iyi uzmanlara erişin
+        </h1>
+        <p className="text-base mb-8" style={{ color: '#8FA3BF', maxWidth: 480 }}>
+          Titizlikle seçilmiş, alanında uzman psikologlarla güvenli ve profesyonel online seans alın.
         </p>
-
-        <div className="flex gap-3 mb-10">
-          <button
-            onClick={() => setShowWizard(true)}
-            className="bg-black text-white px-5 py-2.5 rounded-xl text-sm font-medium"
-          >
-            Size uygun psikologu bulalim
+        <div className="flex gap-3">
+          <button onClick={() => setShowWizard(true)}
+            className="text-sm font-medium px-5 py-3 rounded-lg text-white transition-opacity hover:opacity-90"
+            style={{ background: '#1A6BB5' }}>
+            Size uygun psikologu bulalım
           </button>
-          <a href="#list" className="border px-5 py-2.5 rounded-xl text-sm font-medium text-gray-700">
-            Tum psikologlar
+          <a href="#list"
+            className="text-sm font-medium px-5 py-3 rounded-lg border"
+            style={{ borderColor: '#E4EAF2', color: '#1D3557', background: '#fff' }}>
+            Tüm uzmanlar
           </a>
         </div>
+      </section>
 
-        <div id="list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {psychologists.length > 0 ? psychologists.map((p) => (
-            <div key={p.id} className="bg-white rounded-xl border p-6">
-              <div className="w-12 h-12 bg-gray-100 rounded-full mb-4" />
-              <h3 className="font-semibold text-gray-900">{p.full_name}</h3>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{p.bio}</p>
-              <div className="flex flex-wrap gap-1 mt-3">
-                {p.specialties?.map((s) => (
-                  <span key={s} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {s}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
-                  TL{p.price_per_session} / seans
-                </span>
-                <button
-                  onClick={() => handleBooking(p.id)}
-                  className="text-sm bg-black text-white px-4 py-2 rounded-lg"
-                >
-                  Seans Al
-                </button>
-              </div>
-            </div>
-          )) : (
-            <div className="col-span-3 text-center py-20 text-gray-400">
-              Henuz onaylilar burada gorunecek.
-            </div>
-          )}
+      {/* Psikolog listesi */}
+      <section id="list" className="max-w-5xl mx-auto px-8 pb-16">
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-xs font-medium" style={{ color: '#8FA3BF', letterSpacing: '0.08em' }}>
+            {psychologists.length} UZMAN
+          </p>
         </div>
+
+        {psychologists.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-sm" style={{ color: '#8FA3BF' }}>Uzmanlar yükleniyor...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {psychologists.map(p => (
+              <div key={p.id} className="bg-white rounded-xl border p-6 flex flex-col" style={{ borderColor: '#E4EAF2' }}>
+                <div className="w-12 h-12 rounded-full mb-4 flex items-center justify-center text-sm font-medium"
+                  style={{ background: '#EBF3FC', color: '#1A6BB5' }}>
+                  {p.full_name[0]}
+                </div>
+                <h3 className="text-sm font-medium mb-1" style={{ color: '#1D3557' }}>{p.full_name}</h3>
+                <p className="text-xs mb-3 line-clamp-2 flex-1" style={{ color: '#8FA3BF', lineHeight: 1.6 }}>{p.bio}</p>
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {p.specialties?.slice(0, 3).map(s => (
+                    <span key={s} className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#EBF3FC', color: '#1A6BB5' }}>{s}</span>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: '#F2F5F9' }}>
+                  <span className="text-sm font-medium" style={{ color: '#1D3557' }}>
+                    {p.price_per_session ? `₺${p.price_per_session}` : '—'}<span className="text-xs font-normal" style={{ color: '#8FA3BF' }}> / seans</span>
+                  </span>
+                  <button onClick={() => handleBooking(p.id)}
+                    className="text-xs font-medium px-3 py-1.5 rounded-lg text-white"
+                    style={{ background: '#1A6BB5' }}>
+                    Seans Al
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {showWizard && <AssessmentWizard onClose={() => setShowWizard(false)} onBook={handleBooking} />}

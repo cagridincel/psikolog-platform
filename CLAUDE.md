@@ -281,10 +281,49 @@ CRON_SECRET=
 ## Yapılacaklar (Öncelik Sırasına Göre)
 
 ### 🔴 Kritik — Sıradaki
-1. **Admin paneli** (`/admin`) — tam kapsamlı, aşağıda detay var
-2. **Soru ağacı yönetimi** — admin paneli içinde, aşağıda detay var
-3. **Daily.co video modülü** — modal, Cambly tarzı UI, 2dk kala link aktif
-4. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
+1. **Admin paneli** (`/admin`) — yeni design system ile sıfırdan yaz
+2. **Soru ağacı yönetimi** — admin paneli içinde
+3. **UI yenileme — tüm sayfalar** — violet → klinik mavi, aşağıda sayfa listesi var
+4. **Daily.co video modülü** — modal, Cambly tarzı UI, 2dk kala link aktif
+5. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
+6. **Paket birleştirme** — aynı psikolog için aktif paket varken yeni satın alımda `total_sessions_credited` mevcut pakete eklenir
+7. **Müşteri dashboard — Ödemelerim sekmesi** — satın alınan paketler, kalan/kullanılan seans, durum
+
+---
+
+## UI Yenileme — Etkilenen Sayfalar
+
+Tüm violet (#7C3AED, bg-violet-*, text-violet-*, border-violet-*) referansları klinik mavi design system token'larıyla değiştirilecek.
+
+### Sayfa Listesi
+
+| Dosya | Değişiklik |
+|-------|-----------|
+| `app/page.tsx` | Header renkleri, butonlar, psikolog kartları |
+| `app/auth/login/page.tsx` | Buton, focus ring, logo |
+| `app/auth/kaydol/page.tsx` | Buton, focus ring, logo |
+| `app/psikolog-ol/PsychologistApplyForm.tsx` | Buton, seçenek pill'leri, adım ekranları |
+| `app/(dashboard)/client/ClientDashboard.tsx` | Sidebar, nav aktif rengi, tüm butonlar, badge'ler, kartlar |
+| `app/(dashboard)/client/book/[psychologistId]/BookingPage.tsx` | Slot seçim renkleri, butonlar |
+| `app/(dashboard)/client/checkout/CheckoutPage.tsx` | Paket kartları, ödeme butonu, test banner |
+| `app/(dashboard)/psychologist/PsychologistDashboard.tsx` | Sidebar, nav, istatistik kartları, uyarı banner |
+| `components/calendar/WeeklyCalendar.tsx` | Slot renkleri (available/requested/booked), takvim grid |
+| `components/calendar/SlotModal.tsx` | Modal butonlar, başlıklar |
+| `components/assessment/AssessmentWizard.tsx` | Soru kartları, seçenekler, ilerleme göstergesi |
+
+### Renk Değişim Tablosu
+
+| Eski (Violet) | Yeni (Klinik Mavi) |
+|---------------|-------------------|
+| `bg-violet-600` | `bg-[#1A6BB5]` |
+| `bg-violet-50` | `bg-[#EBF3FC]` |
+| `text-violet-600` | `text-[#1A6BB5]` |
+| `text-violet-700` | `text-[#1D3557]` |
+| `border-violet-*` | `border-[#E4EAF2]` |
+| `focus:ring-violet-500` | `focus:ring-[#1A6BB5]` |
+| `hover:bg-violet-700` | `hover:bg-[#155a9a]` |
+| Zemin `#F5F5F7` | `#F2F5F9` |
+| Sidebar beyaz | `#FFFFFF` border `#E4EAF2` |
 
 ### 🟡 Önemli
 5. **Psikolog profil düzenleme** — bio, fiyat, uzmanlık, avatar (`/psychologist/profile`)
@@ -422,10 +461,84 @@ npm run db:types     # Supabase type generate (bağlı proje gerekir)
 
 ---
 
-## Stil Notları
+## Design System — Klinik Mavi
 
-- Renk paleti: violet-600 (#7C3AED) primary, gri tonları secondary
-- Sidebar genişliği: 256px (w-56)
-- Border radius: rounded-2xl (16px) kart standarttı
-- Dashboard layout: `fixed sidebar + ml-56 main + optional right panel`
-- Türkçe UI — tüm metinler Türkçe
+Tasarım dili: Apple minimal + klinik premium. Violet kaldırıldı, tüm platform bu token'larla yeniden yazılacak.
+
+### Renk Paleti
+
+```css
+/* Ana renkler */
+--color-primary:        #1A6BB5;  /* Klinik mavi — CTA, link, aksan */
+--color-primary-hover:  #5B9BD5;  /* Hover */
+--color-primary-tint:   #EBF3FC;  /* Badge, aktif nav, highlight */
+--color-navy:           #1D3557;  /* Başlıklar, ana metin */
+--color-muted:          #8FA3BF;  /* Alt başlık, placeholder, muted */
+
+/* Yüzeyler */
+--color-page-bg:        #F2F5F9;  /* Dashboard zemin */
+--color-surface:        #FFFFFF;  /* Kart, sidebar, header */
+--color-border:         #E4EAF2;  /* Kart kenarı, ayırıcı */
+
+/* Semantik */
+--color-success:        #1A7A4A;
+--color-success-tint:   #E8F5EE;
+--color-warning:        #92600A;
+--color-warning-tint:   #FEF3E2;
+--color-danger:         #B91C1C;
+--color-danger-tint:    #FDECEA;
+```
+
+### Tipografi
+
+```
+Display / H1  → 22px, weight 500, color navy, letter-spacing -0.02em
+H2            → 17px, weight 500, color navy, letter-spacing -0.01em
+H3 / Kart     → 14px, weight 500, color navy
+Body          → 13px, weight 400, color navy, line-height 1.6
+Caption       → 11px, weight 400, color muted
+Label / Tag   → 10px, weight 500, color muted, letter-spacing 0.08em, uppercase
+```
+
+### Spacing Skalası
+4 · 8 · 12 · 16 · 24 · 32 · 48px
+
+### Border Radius
+- Kart, modal: 10-12px
+- Buton, input: 7px
+- Badge, pill: 20px
+- Avatar: 50%
+
+### Butonlar
+```
+Primary:    bg #1A6BB5, color white, radius 7px, padding 7px 16px
+Secondary:  bg #EBF3FC, color #1A6BB5, radius 7px
+Ghost:      bg transparent, border #E4EAF2, color navy, radius 7px
+Danger:     bg #B91C1C, color white (sadece sil/reddet/çıkış)
+```
+
+### Badge'ler
+```
+Onaylı / Tamamlandı:  bg #E8F5EE, color #1A7A4A
+Onay Bekliyor:         bg #FEF3E2, color #92600A
+İptal / Red:           bg #FDECEA, color #B91C1C
+Bilgi / Aktif:         bg #EBF3FC, color #1A6BB5
+```
+
+### Layout
+```
+Sidebar genişliği: 220px (w-55 veya sabit 220px)
+Header yüksekliği: 48px
+Kart padding: 16px 20px
+Page padding: 24px
+```
+
+### Tüm Platform Yeniden Yazılacak
+Mevcut violet (#7C3AED) referansları kaldırılacak. Etkilenen dosyalar:
+- `ClientDashboard.tsx`
+- `PsychologistDashboard.tsx`
+- `app/auth/login/page.tsx`
+- `app/auth/kaydol/page.tsx`
+- `app/psikolog-ol/PsychologistApplyForm.tsx`
+- `app/page.tsx`
+- Tüm yeni yazılacak sayfalar bu token'larla başlangıçtan yazılacak

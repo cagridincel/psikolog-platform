@@ -178,11 +178,11 @@ export default function PsychologistDashboard({
   const selectedAppointment = selectedSlot ? getAppointmentForSlot(selectedSlot.id) : null
 
   return (
-    <div className="flex min-h-screen bg-[#F5F5F7]">
+    <div className="flex min-h-screen bg-[#F2F5F9]">
       {/* Sidebar */}
-      <aside className="w-56 bg-white border-r border-gray-100 flex flex-col py-6 px-4 fixed h-full z-20">
+      <aside className="w-56 bg-white border-r border-[#E4EAF2] flex flex-col py-6 px-4 fixed h-full z-20">
         <div className="mb-8 px-2">
-          <span className="text-lg font-bold text-gray-900 tracking-tight">Psikolog<span className="text-violet-600">.</span></span>
+          <span className="text-lg font-bold text-[#1D3557] tracking-tight">Psikolog<span className="text-[#1A6BB5]">.</span></span>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
@@ -196,14 +196,14 @@ export default function PsychologistDashboard({
               onClick={() => setActiveTab(id as typeof activeTab)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
                 activeTab === id
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                  ? 'bg-[#EBF3FC] text-[#1D3557]'
+                  : 'text-[#8FA3BF] hover:bg-gray-50 hover:text-gray-800'
               }`}
             >
               <Icon active={activeTab === id} />
               {label}
               {badge ? (
-                <span className="ml-auto bg-violet-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="ml-auto bg-[#1A6BB5] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                   {badge}
                 </span>
               ) : null}
@@ -212,15 +212,15 @@ export default function PsychologistDashboard({
         </nav>
 
         {/* Profil */}
-        <div className="flex items-center gap-3 px-2 pt-4 border-t border-gray-100">
-          <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-sm font-semibold flex-shrink-0 overflow-hidden">
+        <div className="flex items-center gap-3 px-2 pt-4 border-t border-[#E4EAF2]">
+          <div className="w-8 h-8 rounded-full bg-[#EBF3FC] flex items-center justify-center text-[#1D3557] text-sm font-semibold flex-shrink-0 overflow-hidden">
             {profile.avatar_url
               ? <img src={profile.avatar_url} className="w-8 h-8 object-cover" alt="" />
               : profile.full_name[0]}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-gray-800 truncate">{profile.full_name}</p>
-            <p className="text-xs text-gray-400">Psikolog</p>
+            <p className="text-xs text-[#8FA3BF]">Psikolog</p>
           </div>
           <button
             onClick={async () => {
@@ -228,7 +228,7 @@ export default function PsychologistDashboard({
               await createClient().auth.signOut()
               window.location.href = '/'
             }}
-            className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors"
+            className="flex-shrink-0 text-[#8FA3BF] hover:text-red-500 transition-colors"
             title="Çıkış Yap"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -252,11 +252,11 @@ export default function PsychologistDashboard({
                 {[
                   { label: 'Tamamlanan Seans', value: stats.totalSessions, color: 'text-green-600', bg: 'bg-green-50' },
                   { label: 'Onay Bekliyor', value: stats.pendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
-                  { label: 'Toplam Danışan', value: stats.totalClients, color: 'text-violet-600', bg: 'bg-violet-50' },
+                  { label: 'Toplam Danışan', value: stats.totalClients, color: 'text-[#1A6BB5]', bg: 'bg-[#EBF3FC]' },
                   { label: 'Uygun Slot', value: stats.availableSlots, color: 'text-blue-600', bg: 'bg-blue-50' },
                 ].map(({ label, value, color, bg }) => (
-                  <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4">
-                    <p className="text-xs text-gray-400 mb-2">{label}</p>
+                  <div key={label} className="bg-white rounded-2xl border border-[#E4EAF2] p-4">
+                    <p className="text-xs text-[#8FA3BF] mb-2">{label}</p>
                     <p className={`text-2xl font-bold ${color}`}>{value}</p>
                   </div>
                 ))}
@@ -281,7 +281,7 @@ export default function PsychologistDashboard({
 
               {/* Takvim renk göstergesi */}
               <div className="flex items-center gap-1 justify-end">
-                <div className="flex items-center gap-4 text-xs text-gray-400 bg-white border border-gray-100 rounded-xl px-4 py-2">
+                <div className="flex items-center gap-4 text-xs text-[#8FA3BF] bg-white border border-[#E4EAF2] rounded-xl px-4 py-2">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#E8F5E9] border border-[#81C784] inline-block"/>Onaylı</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#FFF8E1] border border-[#FFD54F] inline-block"/>Onay Bekliyor</span>
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#E3F2FD] border border-[#90CAF9] inline-block"/>Uygun</span>
@@ -304,23 +304,23 @@ export default function PsychologistDashboard({
           {/* Danışanlar tab */}
           {activeTab === 'clients' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-900">Danışanlarım</h2>
+              <h2 className="text-xl font-bold text-[#1D3557]">Danışanlarım</h2>
               {appointments.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-                  <p className="text-gray-400">Henüz aktif danışan bulunmuyor.</p>
+                <div className="bg-white rounded-2xl border border-[#E4EAF2] p-12 text-center">
+                  <p className="text-[#8FA3BF]">Henüz aktif danışan bulunmuyor.</p>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                <div className="bg-white rounded-2xl border border-[#E4EAF2] divide-y divide-gray-50">
                   {appointments.map((apt) => (
                     <div key={apt.id} className="flex items-center gap-4 px-6 py-4">
-                      <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-semibold text-sm flex-shrink-0 overflow-hidden">
+                      <div className="w-10 h-10 rounded-full bg-[#EBF3FC] flex items-center justify-center text-[#1D3557] font-semibold text-sm flex-shrink-0 overflow-hidden">
                         {apt.profiles?.avatar_url
                           ? <img src={apt.profiles.avatar_url} className="w-10 h-10 object-cover" alt="" />
                           : (apt.profiles?.full_name?.[0] ?? '?')}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800">{apt.profiles?.full_name ?? 'Danışan'}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Seans #{apt.id.slice(0, 6)}</p>
+                        <p className="text-xs text-[#8FA3BF] mt-0.5">Seans #{apt.id.slice(0, 6)}</p>
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                         apt.status === 'scheduled'
@@ -339,21 +339,21 @@ export default function PsychologistDashboard({
           {/* Bildirimler tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-gray-900">Bildirimler</h2>
+              <h2 className="text-xl font-bold text-[#1D3557]">Bildirimler</h2>
               {notifications.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-                  <p className="text-gray-400">Henüz bildirim yok.</p>
+                <div className="bg-white rounded-2xl border border-[#E4EAF2] p-12 text-center">
+                  <p className="text-[#8FA3BF]">Henüz bildirim yok.</p>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                <div className="bg-white rounded-2xl border border-[#E4EAF2] divide-y divide-gray-50">
                   {notifications.map(n => (
-                    <div key={n.id} className={`flex items-start gap-4 px-6 py-4 ${!n.is_read ? 'bg-violet-50/50' : ''}`}>
-                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!n.is_read ? 'bg-violet-500' : 'bg-transparent'}`} />
+                    <div key={n.id} className={`flex items-start gap-4 px-6 py-4 ${!n.is_read ? 'bg-[#EBF3FC]/50' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!n.is_read ? 'bg-[#EBF3FC]0' : 'bg-transparent'}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-800">{n.title}</p>
-                        <p className="text-sm text-gray-500 mt-0.5">{n.description}</p>
+                        <p className="text-sm text-[#8FA3BF] mt-0.5">{n.description}</p>
                       </div>
-                      <span className="text-xs text-gray-400 flex-shrink-0">{formatRelative(n.created_at)}</span>
+                      <span className="text-xs text-[#8FA3BF] flex-shrink-0">{formatRelative(n.created_at)}</span>
                     </div>
                   ))}
                 </div>
@@ -365,38 +365,38 @@ export default function PsychologistDashboard({
         {/* Sağ panel */}
         <div className="w-64 p-6 flex-shrink-0 hidden xl:block">
           {/* Profil özeti */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
+          <div className="bg-white rounded-2xl border border-[#E4EAF2] p-5 mb-4">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-700 text-2xl font-bold mb-3 overflow-hidden">
+              <div className="w-16 h-16 rounded-2xl bg-[#EBF3FC] flex items-center justify-center text-[#1D3557] text-2xl font-bold mb-3 overflow-hidden">
                 {profile.avatar_url
                   ? <img src={profile.avatar_url} className="w-16 h-16 object-cover" alt="" />
                   : profile.full_name[0]}
               </div>
-              <p className="font-semibold text-gray-900 text-sm">{profile.full_name}</p>
+              <p className="font-semibold text-[#1D3557] text-sm">{profile.full_name}</p>
               {profile.price_per_session && (
-                <p className="text-xs text-gray-400 mt-0.5">₺{profile.price_per_session} / seans</p>
+                <p className="text-xs text-[#8FA3BF] mt-0.5">₺{profile.price_per_session} / seans</p>
               )}
               <div className="flex flex-wrap gap-1 mt-3 justify-center">
                 {profile.specialties.slice(0, 2).map(s => (
-                  <span key={s} className="text-xs bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full">{s}</span>
+                  <span key={s} className="text-xs bg-[#EBF3FC] text-[#1A6BB5] px-2 py-0.5 rounded-full">{s}</span>
                 ))}
               </div>
             </div>
           </div>
 
           {/* Son bildirimler */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Son Aktivite</p>
+          <div className="bg-white rounded-2xl border border-[#E4EAF2] p-5">
+            <p className="text-xs font-semibold text-[#8FA3BF] uppercase tracking-wide mb-4">Son Aktivite</p>
             {notifications.length === 0 ? (
-              <p className="text-xs text-gray-400">Bildirim yok.</p>
+              <p className="text-xs text-[#8FA3BF]">Bildirim yok.</p>
             ) : (
               <div className="space-y-4">
                 {notifications.slice(0, 4).map(n => (
                   <div key={n.id} className="flex items-start gap-2.5">
-                    <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${!n.is_read ? 'bg-violet-500' : 'bg-gray-200'}`} />
+                    <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${!n.is_read ? 'bg-[#EBF3FC]0' : 'bg-gray-200'}`} />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-800 leading-tight">{n.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{formatRelative(n.created_at)}</p>
+                      <p className="text-xs text-[#8FA3BF] mt-0.5">{formatRelative(n.created_at)}</p>
                     </div>
                   </div>
                 ))}

@@ -165,12 +165,12 @@ export default function CheckoutPage({ profile, slot, packages, userId }: Props)
                   onClick={() => setSelectedPackage(pkg)}
                   className={`relative rounded-2xl border-2 p-5 text-center transition-all ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-[#1A6BB5] bg-[#EBF3FC]'
                       : 'border-gray-100 bg-white hover:border-gray-200'
                   }`}
                 >
                   {pkg.is_popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#1A6BB5] text-white text-xs font-medium px-3 py-1 rounded-full">
                       POPÜLER
                     </div>
                   )}
@@ -179,14 +179,14 @@ export default function CheckoutPage({ profile, slot, packages, userId }: Props)
                   {pkg.discount_percent > 0 && (
                     <p className="text-xs text-gray-400 line-through mb-0.5">₺{basePrice}</p>
                   )}
-                  <p className="text-2xl font-bold text-blue-600 mb-4">₺{pricePerSession}</p>
+                  <p className="text-2xl font-bold text-[#1A6BB5] mb-4">₺{pricePerSession}</p>
                   <div className="space-y-1.5 text-left">
                     <p className="text-xs text-gray-500 flex items-center gap-1.5"><span>🎥</span> 50 dk görüntülü görüşme</p>
                     <p className="text-xs text-gray-500 flex items-center gap-1.5"><span>📅</span> 24 saat öncesi iptal</p>
                   </div>
                   {pkg.discount_percent > 0 && (
                     <div className="mt-4 border-t pt-3">
-                      <p className="text-xs font-medium text-blue-600">₺{discountAmount} indirimli ödeyin</p>
+                      <p className="text-xs font-medium text-[#1A6BB5]">₺{discountAmount} indirimli ödeyin</p>
                     </div>
                   )}
                 </button>
@@ -217,7 +217,7 @@ export default function CheckoutPage({ profile, slot, packages, userId }: Props)
           <button
             onClick={handlePayment}
             disabled={loading}
-            className="w-full bg-violet-600 text-white py-4 rounded-xl font-medium disabled:opacity-40 transition-opacity hover:bg-violet-700"
+            className="w-full bg-[#1A6BB5] text-white py-4 rounded-xl font-medium disabled:opacity-40 transition-opacity hover:opacity-90"
           >
             {loading ? 'İşleniyor...' : `₺${calculatePrices(effectivePackage).finalTotal || basePrice} Öde`}
           </button>
