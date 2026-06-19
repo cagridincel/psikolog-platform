@@ -280,25 +280,125 @@ CRON_SECRET=
 
 ## Yapılacaklar (Öncelik Sırasına Göre)
 
-### 🔴 Kritik
-1. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
-2. **Daily.co video sayfası** — `/seans/[appointmentId]` sayfası yok, "Seansa Katıl" linki açık URL'e gidiyor, iframe ile sarmalanmalı
+### 🔴 Kritik — Sıradaki
+1. **Admin paneli** (`/admin`) — tam kapsamlı, aşağıda detay var
+2. **Soru ağacı yönetimi** — admin paneli içinde, aşağıda detay var
+3. **Daily.co video modülü** — modal, Cambly tarzı UI, 2dk kala link aktif
+4. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
 
 ### 🟡 Önemli
-3. **Psikolog profil düzenleme** — bio, fiyat, uzmanlık, avatar güncelleme sayfası yok (`/psychologist/profile`)
-4. **Klinik not sayfası** — seans sonrası psikolog notları (`/psychologist/notes/[appointmentId]`)
-5. **Şifre sıfırlama** — `/auth/sifre-sifirla` sayfası yok
-6. **Admin paneli** — psikolog onayı için basit liste + toggle (`/admin`)
+5. **Psikolog profil düzenleme** — bio, fiyat, uzmanlık, avatar (`/psychologist/profile`)
+6. **Klinik not sayfası** — seans sonrası psikolog notları (`/psychologist/notes/[appointmentId]`)
+7. **Şifre sıfırlama** — `/auth/sifre-sifirla`
 
 ### 🟢 Nice to Have
-7. **`supabase gen types`** — `AnyClient` hack'ini kaldır, gerçek type'lar kullan
-8. **`packages` tablosunu doldur** — 1/3/6 seanslık paket tanımları ekle, checkout'ta göster
-9. **Duplicate dosyalar silinmeli:**
-   - `app/api/psychologists - Kopya/` klasörü (boşluk içeriyor, manuel sil)
-   - `app/api/psychologist/route.ts` (`psychologists/route.ts` ile aynı içerik)
-   - `app/api/cron/check-notifications/cron_route.ts` (eski isim, `route.ts` var)
-   - `app/api/psychologists/slots/` (eski route'lar, `psychologist/slots/` kullanılıyor)
-10. **Console.log temizliği** — `payments/initiate/route.ts`'te debug log kaldı
+8. **`supabase gen types`** — `AnyClient` hack'ini kaldır
+9. **`packages` tablosunu doldur** — 1/3/6 seanslık paket tanımları
+10. **Duplicate dosyalar silinmeli:**
+    - `app/api/psychologists - Kopya/` (manuel sil)
+    - `app/api/psychologist/route.ts` (duplicate)
+    - `app/api/cron/check-notifications/cron_route.ts` (eski isim)
+    - `app/api/psychologists/slots/` (eski route'lar)
+11. **Console.log temizliği** — `payments/initiate/route.ts`'te debug log kaldı
+
+---
+
+## Admin Paneli Detayı
+
+### Giriş
+- `/admin/login` — ayrı sayfa, sadece email/şifre (Google yok)
+- `users.role = 'admin'` olan hesaplar girebilir
+- Yanlış role → `/admin/login?error=unauthorized`
+- Middleware zaten `/admin/*` koruyor, her API'de `role === 'admin'` kontrolü
+
+### Bölümler
+
+**1. Genel Bakış**
+- Toplam kullanıcı, aktif psikolog, bu ay seans, bu ay gelir (istatistik kartları)
+- Son 30 günlük seans + gelir grafiği
+- Onay bekleyen psikolog sayısı (badge uyarısı)
+
+**2. Psikolog Yönetimi**
+- Bekleyen başvurular — profil detayı, onayla/reddet
+- Aktif psikologlar — askıya al, profil düzenle
+- Reddedilenler — tekrar aktifleştir
+- **Yeni Psikolog Ekle** — admin formu (ad, email, şifre, bio, uzmanlık, fiyat, cinsiyet) → direkt `is_approved: true` olarak oluşturulur
+
+**3. Kullanıcı Yönetimi**
+- Müşteri listesi — kayıt tarihi, toplam seans, aktif paket
+- Arama + filtreleme
+- Kullanıcı detay sayfası — randevu geçmişi, ödemeler
+
+**4. Ödeme Geçmişi**
+- Tüm payment kayıtları — tarih, miktar, durum, müşteri, psikolog
+- Filtreleme (tarih, durum, psikolog)
+- Toplam gelir özeti
+
+**5. Seans Geçmişi**
+- Tüm appointment'lar — durum, taraflar, tarih
+- Tamamlanan/iptal/bekleyen filtreleri
+
+**6. Soru Ağacı Yönetimi** — aşağıda detay
+
+---
+
+## Soru Ağacı Yönetimi Detayı
+
+### DB Yapısı
+```
+questions
+  id, text, order_index, meta_key
+
+question_options
+  id, question_id, text, next_question_id, meta_value
+
+option_specialties
+  option_id, specialty_tag, weight
+```
+
+### Admin UI Özellikleri
+- **Soru listesi** — sıra numarasıyla, düzenle/sil
+- **Soru ekle/düzenle** — metin, meta_key (cinsiyet/yaş filtresi için)
+- **Seçenek yönetimi** — her sorunun altında seçenekler, ekle/düzenle/sil
+- **Dallanma ayarı** — seçeneğin hangi soruya gittiği (next_question_id) dropdown
+- **Uzmanlık puanı** — seçeneğin hangi uzmanlığa kaç puan verdiği (option_specialties)
+- **Meta değer** — cinsiyet tercihi, yaş grubu vb. filtreler için
+- **Görsel ağaç önizleme** — hangi sorudan hangisine dallandığını akış diyagramı olarak göster
+- **Sıra değiştirme** — drag & drop veya ok butonları ile
+
+### API Route'ları (yazılacak)
+```
+GET  /api/admin/questions          — tüm sorular + seçenekler + uzmanlıklar
+POST /api/admin/questions          — soru ekle
+PUT  /api/admin/questions/[id]     — soru güncelle
+DEL  /api/admin/questions/[id]     — soru sil
+POST /api/admin/questions/[id]/options        — seçenek ekle
+PUT  /api/admin/questions/[id]/options/[oid]  — seçenek güncelle
+DEL  /api/admin/questions/[id]/options/[oid]  — seçenek sil
+```
+
+---
+
+## Video Modülü Detayı
+
+### Sayfa
+`/seans/[appointmentId]` — dashboard üzerinde modal olarak açılır
+
+### Özellikler
+- `@daily-co/daily-js` SDK (iframe değil, tam kontrol)
+- Karşı taraf büyük ortada, kendi görüntü sağ alt PiP
+- Psikolog: sağda not alma paneli (danışan görmez)
+- Müşteri: sade görünüm
+- Alt kontrol bar: mikrofon, kamera, ekran paylaşımı, ayarlar, bitir
+- Üst bar: seans adı, süre sayacı, bağlantı durumu
+- Seans bitince: psikolog → not kaydet ekranı, müşteri → değerlendirme ekranı
+
+### 2 Dakika Kuralı
+"Seansa Katıl" butonuna basılınca:
+1. API'ye sor — `slot_start_time` kontrolü
+2. 2 dakikadan fazla varsa → geri sayım göster, otomatik aktifleşince modal aç
+3. 2 dakika veya daha az kaldıysa → direkt modal aç
+4. Seans saati geçmişse → "Seans süresi doldu" göster
 
 ---
 
