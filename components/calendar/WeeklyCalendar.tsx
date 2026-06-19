@@ -112,7 +112,8 @@ export default function WeeklyCalendar({ weekStart, slots, appointments, onCellC
         {weekOffset !== 0 && (
           <button
             onClick={onThisWeek}
-            className="text-xs font-medium text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+            style={{ color: '#1A6BB5', background: '#EBF3FC' }}
           >
             Bu Hafta
           </button>

@@ -3,6 +3,9 @@
 import { useState, useCallback } from 'react'
 import WeeklyCalendar from '@/components/calendar/WeeklyCalendar'
 import SlotModal from '@/components/calendar/SlotModal'
+import dynamic from 'next/dynamic'
+
+const VideoModal = dynamic(() => import('@/components/video/VideoModal'), { ssr: false })
 
 interface Slot {
   id: string
@@ -63,15 +66,17 @@ function formatRelative(dateStr: string) {
 }
 
 export default function PsychologistDashboard({
-  profile, slots: initialSlots, appointments, weekStart, stats, notifications,
+  profile, slots: initialSlots, appointments: initialAppointments, weekStart, stats, notifications,
 }: Props) {
   const [slots, setSlots] = useState<Slot[]>(initialSlots)
+  const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments)
   const [weekOffset, setWeekOffset] = useState(0)
   const [currentWeekStart, setCurrentWeekStart] = useState(new Date(weekStart))
   const [selectedCell, setSelectedCell] = useState<{ date: Date; hour: number } | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'notifications'>('calendar')
+  const [videoAppointmentId, setVideoAppointmentId] = useState<string | null>(null)
 
   const unreadCount = notifications.filter(n => !n.is_read).length
   const pendingAppointments = appointments.filter(a => a.status === 'pending_approval')
@@ -85,6 +90,11 @@ export default function PsychologistDashboard({
     end.setDate(start.getDate() + 7)
     const res = await fetch(`/api/psychologist/slots?start=${start.toISOString()}&end=${end.toISOString()}`)
     if (res.ok) setSlots(await res.json())
+  }
+
+  async function fetchAppointments() {
+    const res = await fetch('/api/psychologist/appointments')
+    if (res.ok) setAppointments(await res.json())
   }
 
   async function handleWeekChange(direction: 'prev' | 'next') {
@@ -179,6 +189,13 @@ export default function PsychologistDashboard({
 
   return (
     <div className="flex min-h-screen bg-[#F2F5F9]">
+      {videoAppointmentId && (
+        <VideoModal
+          appointmentId={videoAppointmentId}
+          participantName={profile.full_name}
+          onClose={() => setVideoAppointmentId(null)}
+        />
+      )}
       {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-[#E4EAF2] flex flex-col py-6 px-4 fixed h-full z-20">
         <div className="mb-8 px-2">
@@ -250,10 +267,10 @@ export default function PsychologistDashboard({
               {/* İstatistik kartları */}
               <div className="grid grid-cols-4 gap-4">
                 {[
-                  { label: 'Tamamlanan Seans', value: stats.totalSessions, color: 'text-green-600', bg: 'bg-green-50' },
-                  { label: 'Onay Bekliyor', value: stats.pendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
+                  { label: 'Tamamlanan Seans', value: stats.totalSessions, color: 'text-[#1A7A4A]', bg: 'bg-[#E8F5EE]' },
+                  { label: 'Onay Bekliyor', value: stats.pendingCount, color: 'text-[#92600A]', bg: 'bg-[#FEF3E2]' },
                   { label: 'Toplam Danışan', value: stats.totalClients, color: 'text-[#1A6BB5]', bg: 'bg-[#EBF3FC]' },
-                  { label: 'Uygun Slot', value: stats.availableSlots, color: 'text-blue-600', bg: 'bg-blue-50' },
+                  { label: 'Uygun Slot', value: stats.availableSlots, color: 'text-[#1D3557]', bg: 'bg-[#F2F5F9]' },
                 ].map(({ label, value, color, bg }) => (
                   <div key={label} className="bg-white rounded-2xl border border-[#E4EAF2] p-4">
                     <p className="text-xs text-[#8FA3BF] mb-2">{label}</p>
@@ -324,8 +341,8 @@ export default function PsychologistDashboard({
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                         apt.status === 'scheduled'
-                          ? 'bg-green-50 text-green-700'
-                          : 'bg-amber-50 text-amber-700'
+                          ? 'bg-[#E8F5EE] text-[#1A7A4A]'
+                          : 'bg-[#FEF3E2] text-[#92600A]'
                       }`}>
                         {apt.status === 'scheduled' ? 'Onaylı' : 'Onay Bekliyor'}
                       </span>
@@ -424,6 +441,8 @@ export default function PsychologistDashboard({
           onDelete={() => selectedSlot && handleDeleteSlot(selectedSlot.id)}
           onAccept={() => selectedAppointment && handleAccept(selectedAppointment.id)}
           onReject={() => selectedAppointment && handleReject(selectedAppointment.id)}
+          onJoin={(id) => { setVideoAppointmentId(id); setSelectedSlot(null) }}
+          onManualCreated={async () => { await fetchWeekSlots(currentWeekStart); await fetchAppointments() }}
           onClose={() => { setSelectedCell(null); setSelectedSlot(null) }}
         />
       )}

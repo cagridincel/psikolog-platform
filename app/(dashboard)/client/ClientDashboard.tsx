@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+
+const VideoModal = dynamic(() => import('@/components/video/VideoModal'), { ssr: false })
 
 interface Payment {
   id: string
@@ -84,6 +87,7 @@ export default function ClientDashboard({
   upcomingAppointments, notifications,
 }: Props) {
   const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'psychologist' | 'notifications'>('home')
+  const [videoAppointmentId, setVideoAppointmentId] = useState<string | null>(null)
   const unreadCount = notifications.filter(n => !n.is_read).length
   const remainingSessions = activePayment
     ? activePayment.total_sessions_credited - activePayment.sessions_used
@@ -92,6 +96,13 @@ export default function ClientDashboard({
 
   return (
     <div className="flex min-h-screen bg-[#F2F5F9]">
+      {videoAppointmentId && (
+        <VideoModal
+          appointmentId={videoAppointmentId}
+          participantName={userName}
+          onClose={() => setVideoAppointmentId(null)}
+        />
+      )}
       {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-[#E4EAF2] flex flex-col py-6 px-4 fixed h-full z-20">
         <div className="mb-8 px-2">
@@ -248,7 +259,7 @@ export default function ClientDashboard({
                 ) : (
                   <div className="space-y-3">
                     {upcomingAppointments.slice(0, 2).map(apt => (
-                      <AppointmentCard key={apt.id} appointment={apt} />
+                      <AppointmentCard key={apt.id} appointment={apt} onJoin={setVideoAppointmentId} />
                     ))}
                   </div>
                 )}
@@ -271,7 +282,7 @@ export default function ClientDashboard({
                 </div>
               ) : (
                 upcomingAppointments.map(apt => (
-                  <AppointmentCard key={apt.id} appointment={apt} expanded />
+                  <AppointmentCard key={apt.id} appointment={apt} expanded onJoin={setVideoAppointmentId} />
                 ))
               )}
             </div>
@@ -368,18 +379,18 @@ export default function ClientDashboard({
   )
 }
 
-function AppointmentCard({ appointment, expanded = false }: { appointment: Appointment; expanded?: boolean }) {
-  const isJoinable = appointment.status === 'scheduled' && appointment.meeting_room_url
+function AppointmentCard({ appointment, expanded = false, onJoin }: { appointment: Appointment; expanded?: boolean; onJoin?: (id: string) => void }) {
+  const isJoinable = appointment.status === 'scheduled'
   const dateStr = appointment.slot_start_time
 
   return (
-    <div className={`rounded-xl border ${expanded ? 'border-gray-200 p-5' : 'border-[#E4EAF2] bg-gray-50 p-4'}`}>
+    <div className={`rounded-xl border ${expanded ? 'border-[#E4EAF2] p-5' : 'border-[#E4EAF2] bg-[#F2F5F9] p-4'}`} style={{ background: expanded ? '#fff' : undefined }}>
       <div className="flex items-start justify-between gap-3">
         <div>
           {dateStr && (
             <>
-              <p className="text-sm font-semibold text-[#1D3557]">{formatDate(dateStr)}</p>
-              <p className="text-sm text-[#8FA3BF] mt-0.5">{formatTime(dateStr)}</p>
+              <p className="text-sm font-medium" style={{ color: '#1D3557' }}>{formatDate(dateStr)}</p>
+              <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>{formatTime(dateStr)}</p>
             </>
           )}
           <div className="mt-2">
@@ -387,14 +398,13 @@ function AppointmentCard({ appointment, expanded = false }: { appointment: Appoi
           </div>
         </div>
         {isJoinable && (
-          <a
-            href={appointment.meeting_room_url!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-green-700 transition-colors"
+          <button
+            onClick={() => onJoin?.(appointment.id)}
+            className="flex-shrink-0 text-white text-sm font-medium px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+            style={{ background: '#1A7A4A' }}
           >
             Katıl
-          </a>
+          </button>
         )}
       </div>
     </div>

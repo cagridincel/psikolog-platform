@@ -165,7 +165,7 @@ export default function AssessmentWizard({ onClose, onBook  }: Props) {
                       <p className="text-sm text-gray-500 mt-1 line-clamp-2">{r.profile.bio}</p>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {r.matchedSpecialties.map((s) => (
-                          <span key={s} className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">
+                          <span key={s} className="text-xs bg-[#EBF3FC] text-[#1A6BB5] px-2 py-1 rounded-full">
                             {s}
                           </span>
                         ))}

@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
+
+const QuestionTreeEditor = dynamic(() => import('@/components/admin/QuestionTreeEditor'), { ssr: false })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
@@ -56,7 +59,7 @@ interface Appointment {
   created_at: string
 }
 
-type Tab = 'overview' | 'psychologists' | 'users' | 'payments' | 'appointments'
+type Tab = 'overview' | 'psychologists' | 'users' | 'payments' | 'appointments' | 'questions'
 type PsychTab = 'pending' | 'approved'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -259,6 +262,7 @@ export default function AdminDashboard() {
     { id: 'users', label: 'Kullanıcılar' },
     { id: 'payments', label: 'Ödemeler' },
     { id: 'appointments', label: 'Seanslar' },
+    { id: 'questions', label: 'Soru Ağacı' },
   ]
 
   return (
@@ -598,6 +602,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* SORU AĞACI */}
+        {activeTab === 'questions' && (
+          <div className="space-y-5">
+            <div>
+              <h1 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Soru Ağacı</h1>
+              <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>Değerlendirme sorularını ve dallanma mantığını yönetin</p>
+            </div>
+            <QuestionTreeEditor />
+          </div>
+        )}
       </main>
     </div>
   )

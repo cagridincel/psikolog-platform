@@ -280,14 +280,25 @@ CRON_SECRET=
 
 ## Yapılacaklar (Öncelik Sırasına Göre)
 
-### 🔴 Kritik — Sıradaki
-1. **Admin paneli** (`/admin`) — yeni design system ile sıfırdan yaz
-2. **Soru ağacı yönetimi** — admin paneli içinde
-3. **UI yenileme — tüm sayfalar** — violet → klinik mavi, aşağıda sayfa listesi var
-4. **Daily.co video modülü** — modal, Cambly tarzı UI, 2dk kala link aktif
-5. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
-6. **Paket birleştirme** — aynı psikolog için aktif paket varken yeni satın alımda `total_sessions_credited` mevcut pakete eklenir
-7. **Müşteri dashboard — Ödemelerim sekmesi** — satın alınan paketler, kalan/kullanılan seans, durum
+### 🔴 Kritik
+1. **İyzico entegrasyonu** — hesap aktif olunca `TEST_MODE = false`, webhook yaz
+2. **Daily.co API key** — gerçek video odası oluşturabilmek için
+
+### 🟡 Önemli
+3. **Müşteri dashboard — Ödemelerim sekmesi** — satın alınan paketler, kalan/kullanılan seans, tarih, durum badge'i
+4. **Paket birleştirme** — aynı psikolog için aktif paket varken yeni satın alımda `total_sessions_credited` mevcut pakete eklenir, yeni kayıt açılmaz
+5. **Psikolog profil düzenleme** — bio, fiyat, uzmanlık, avatar (`/psychologist/profile`)
+6. **Şifre sıfırlama** — `/auth/sifre-sifirla` sayfası
+7. **Klinik not sayfası** — seans sonrası psikolog notları (`/psychologist/notes/[appointmentId]`)
+8. **Video seans sonrası** — psikolog → klinik not kaydet, müşteri → değerlendirme ekranı
+
+### 🟢 Nice to Have
+9. **`supabase gen types`** — `AnyClient` hack'ini kaldır, gerçek type'lar kullan
+10. **`packages` tablosunu doldur** — 1/3/6 seanslık paket tanımları, checkout'ta göster
+11. **Duplicate dosyalar silinmeli:**
+    - `app/api/psychologists - Kopya/` (manuel sil)
+    - `app/api/psychologist/route.ts` (duplicate)
+    - `app/api/cron/check-notifications/cron_route.ts` (eski isim)
 
 ---
 

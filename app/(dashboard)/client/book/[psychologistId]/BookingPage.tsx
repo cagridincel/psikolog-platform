@@ -133,11 +133,11 @@ export default function BookingPage({ profile, slots, userId, activePackage }: P
           </div>
 
           {hasPackage && (
-            <div className="mt-4 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+            <div className="mt-4 bg-[#E8F5EE]50 border border-green-100 rounded-xl px-4 py-3">
               <p className="text-sm text-green-700 font-medium">
                 Aktif paketiniz var — {remainingSessions} seans hakkınız kaldı
               </p>
-              <p className="text-xs text-green-600 mt-0.5">Bu seans ücretiz olarak kullanılacak</p>
+              <p className="text-xs text-[#1A7A4A] mt-0.5">Bu seans ücretiz olarak kullanılacak</p>
             </div>
           )}
 

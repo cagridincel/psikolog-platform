@@ -35,7 +35,7 @@ export default function PsychologistFinalizeClient() {
   return (
     <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center">
       <div className="text-center">
-        <div className="w-10 h-10 border-2 border-violet-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <div className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ borderColor: '#1A6BB5', borderTopColor: 'transparent' }} />
         <p className="text-sm text-gray-500">Profiliniz oluşturuluyor...</p>
       </div>
     </main>
