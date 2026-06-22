@@ -162,21 +162,40 @@ export default function WeeklyCalendar({ weekStart, slots, appointments, onCellC
                     return cellTime < new Date()
                   })()
 
+                  // Geçmiş available slot — pasif göster
+                  const isPastAvailable = isPast && slot?.status === 'available'
+                  // Geçmiş booked/scheduled — tıklanabilir (detay görünsün) ama seansa girilemez
+                  const isPastBooked = isPast && (slot?.status === 'booked' || slot?.status === 'requested')
+
                   return (
                     <td
                       key={di}
                       className={`border-b border-gray-50 p-1 align-top h-12 ${
                         !slot && !isPast ? 'cursor-pointer hover:bg-gray-50' : ''
-                      }`}
-                      onClick={() => onCellClick(day, hour)}
+                      } ${isPastBooked ? 'cursor-pointer' : ''}`}
+                      onClick={() => {
+                        // Geçmiş boş hücreye tıklanamaz
+                        if (isPast && !slot) return
+                        // Geçmiş available slot tıklanamaz
+                        if (isPastAvailable) return
+                        onCellClick(day, hour)
+                      }}
                     >
                       {slot ? (
-                        <div className={`h-full rounded-lg border px-2 py-1 cursor-pointer transition-colors ${getSlotStyle(slot.status)}`}>
-                          <p className="text-xs font-medium leading-tight">{getSlotLabel(slot.status)}</p>
-                          {apt?.profiles && (
-                            <p className="text-xs opacity-75 truncate mt-0.5">{apt.profiles.full_name}</p>
-                          )}
-                        </div>
+                        isPastAvailable ? (
+                          // Geçmiş available — soluk, tıklanamaz
+                          <div className="h-full rounded-lg border px-2 py-1 opacity-30 cursor-not-allowed"
+                            style={{ background: '#F2F5F9', borderColor: '#E4EAF2' }}>
+                            <p className="text-xs font-medium leading-tight" style={{ color: '#8FA3BF' }}>Geçmiş Slot</p>
+                          </div>
+                        ) : (
+                          <div className={`h-full rounded-lg border px-2 py-1 cursor-pointer transition-colors ${getSlotStyle(slot.status)} ${isPast && slot.status !== 'completed' ? 'opacity-60' : ''}`}>
+                            <p className="text-xs font-medium leading-tight">{getSlotLabel(slot.status)}</p>
+                            {apt?.profiles && (
+                              <p className="text-xs opacity-75 truncate mt-0.5">{apt.profiles.full_name}</p>
+                            )}
+                          </div>
+                        )
                       ) : isPast ? (
                         <div className="h-full" />
                       ) : (

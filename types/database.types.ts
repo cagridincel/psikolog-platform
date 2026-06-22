@@ -31,6 +31,14 @@ export interface ProfileRow {
   price_per_session: number | null
   is_approved: boolean
   gender: string | null
+  experience_years: number | null
+  languages: string[]
+  approaches: string[]
+  age_groups: string[]
+  session_duration: number | null
+  session_types: string[]
+  education: { school: string; department: string; year: string }[]
+  certificates: { name: string; institution: string; year: string; url?: string }[]
 }
 
 export interface SlotRow {

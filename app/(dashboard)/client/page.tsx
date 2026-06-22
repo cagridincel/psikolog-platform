@@ -5,11 +5,16 @@ import ClientDashboard from './ClientDashboard'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = { from: (table: string) => any }
 
-export default async function ClientDashboardPage() {
+export default async function ClientDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/client')
 
+  const { error } = await searchParams
   const db = supabase as unknown as AnyClient
 
   const { data: userProfile } = await db
@@ -85,13 +90,18 @@ export default async function ClientDashboardPage() {
 
   return (
     <ClientDashboard
+      userId={user.id}
       userName={userProfile?.full_name ?? user.email ?? 'Kullanıcı'}
       userAvatar={userProfile?.avatar_url ?? null}
       activePayment={activePayment ?? null}
       psychologist={psychologistProfile}
+      psychologistId={activePayment?.psychologist_id ?? null}
       upcomingAppointments={upcomingAppointments ?? []}
       notifications={notifications ?? []}
       payments={paymentsWithPsych}
+      errorMessage={error === 'active_package_exists'
+        ? 'Aktif bir psikologunuz bulunuyor. Psikolog değişikliği için lütfen admin ile iletişime geçin.'
+        : undefined}
     />
   )
 }

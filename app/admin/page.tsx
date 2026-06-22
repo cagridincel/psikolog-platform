@@ -16,5 +16,11 @@ export default async function AdminPage() {
 
   if (userData?.role !== 'admin') redirect('/admin/login?error=unauthorized')
 
-  return <AdminDashboard />
+  const { data: profile } = await db
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single() as { data: { full_name: string } | null }
+
+  return <AdminDashboard adminId={user.id} adminName={profile?.full_name ?? 'Admin'} />
 }

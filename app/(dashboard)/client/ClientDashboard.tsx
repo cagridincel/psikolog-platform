@@ -5,6 +5,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 
 const VideoModal = dynamic(() => import('@/components/video/VideoModal'), { ssr: false })
+const MessagingPanel = dynamic(() => import('@/components/messaging/MessagingPanel'), { ssr: false })
 
 interface Payment {
   id: string
@@ -51,13 +52,16 @@ interface Notification {
 }
 
 interface Props {
+  userId: string
   userName: string
   userAvatar: string | null
   activePayment: Payment | null
   psychologist: Psychologist | null
+  psychologistId: string | null
   upcomingAppointments: Appointment[]
   notifications: Notification[]
   payments: PaymentRecord[]
+  errorMessage?: string
 }
 
 function formatDate(dateStr: string) {
@@ -97,10 +101,10 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function ClientDashboard({
-  userName, userAvatar, activePayment, psychologist,
-  upcomingAppointments, notifications, payments,
+  userId, userName, userAvatar, activePayment, psychologist, psychologistId,
+  upcomingAppointments, notifications, payments, errorMessage,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'psychologist' | 'notifications' | 'payments'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'psychologist' | 'notifications' | 'payments' | 'messages'>('home')
   const [videoAppointmentId, setVideoAppointmentId] = useState<string | null>(null)
   const unreadCount = notifications.filter(n => !n.is_read).length
   const remainingSessions = activePayment
@@ -129,6 +133,7 @@ export default function ClientDashboard({
             { id: 'sessions', label: 'Seanslarım', icon: CalendarIcon },
             { id: 'psychologist', label: 'Psikologum', icon: PersonIcon },
             { id: 'payments', label: 'Ödemelerim', icon: CreditCardIcon },
+            { id: 'messages', label: 'Mesajlar', icon: MessageIcon },
             { id: 'notifications', label: 'Bildirimler', icon: BellIcon, badge: unreadCount },
           ].map(({ id, label, icon: Icon, badge }) => (
             <button
@@ -187,6 +192,16 @@ export default function ClientDashboard({
           {/* Ana Sayfa */}
           {activeTab === 'home' && (
             <div className="space-y-6">
+              {/* Hata mesajı */}
+              {errorMessage && (
+                <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl border" style={{ background: '#FEF3E2', borderColor: '#F59E0B' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92600A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <p className="text-sm" style={{ color: '#92600A' }}>{errorMessage}</p>
+                </div>
+              )}
               {/* Karşılama */}
               <div className="bg-gradient-to-r from-[#1D3557] to-[#1A6BB5] rounded-2xl p-7 text-white relative overflow-hidden">
                 <div className="absolute right-0 top-0 bottom-0 w-48 opacity-10"
@@ -357,7 +372,6 @@ export default function ClientDashboard({
                     const remaining = p.total_sessions_credited - p.sessions_used
                     const isActive = p.status === 'paid' && remaining > 0
                     const isCancelled = p.status === 'cancelled'
-                    const isCompleted = p.status === 'paid' && remaining <= 0
 
                     return (
                       <div key={p.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: '#E4EAF2' }}>
@@ -417,6 +431,21 @@ export default function ClientDashboard({
             </div>
           )}
 
+          {/* Mesajlar tab */}
+          {activeTab === 'messages' && (
+            <div className="space-y-4" style={{ height: 'calc(100vh - 140px)' }}>
+              <h2 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Mesajlar</h2>
+              <div className="h-full">
+                <MessagingPanel
+                  currentUserId={userId}
+                  currentUserName={userName}
+                  role="client"
+                  defaultRecipientId={psychologistId ?? undefined}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Bildirimler tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-4">
@@ -429,7 +458,7 @@ export default function ClientDashboard({
                 <div className="bg-white rounded-2xl border border-[#E4EAF2] divide-y divide-gray-50">
                   {notifications.map(n => (
                     <div key={n.id} className={`flex items-start gap-4 px-6 py-4 ${!n.is_read ? 'bg-[#EBF3FC]/50' : ''}`}>
-                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!n.is_read ? 'bg-[#EBF3FC]0' : 'bg-transparent'}`} />
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${!n.is_read ? 'bg-[#1A6BB5]' : 'bg-transparent'}`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-[#1D3557]">{n.title}</p>
                         <p className="text-sm text-[#8FA3BF] mt-0.5">{n.description}</p>
@@ -453,7 +482,7 @@ export default function ClientDashboard({
               <div className="space-y-4">
                 {notifications.slice(0, 4).map(n => (
                   <div key={n.id} className="flex items-start gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.is_read ? 'bg-[#EBF3FC]0' : 'bg-gray-200'}`} />
+                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.is_read ? 'bg-[#1A6BB5]' : 'bg-gray-200'}`} />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-[#1D3557] leading-tight">{n.title}</p>
                       <p className="text-xs text-[#8FA3BF] mt-0.5">{formatRelative(n.created_at)}</p>
@@ -470,8 +499,20 @@ export default function ClientDashboard({
 }
 
 function AppointmentCard({ appointment, expanded = false, onJoin }: { appointment: Appointment; expanded?: boolean; onJoin?: (id: string) => void }) {
-  const isJoinable = appointment.status === 'scheduled'
   const dateStr = appointment.slot_start_time
+  const now = new Date()
+
+  // Seans saatine 20dk kala aktif, seans başlangıcından 95dk sonra devre dışı
+  const isJoinable = (() => {
+    if (appointment.status !== 'scheduled') return false
+    if (!dateStr) return true
+    const start = new Date(dateStr)
+    const diffMins = (start.getTime() - now.getTime()) / 60000
+    if (diffMins > 20) return false // Henüz çok erken
+    const endMs = start.getTime() + 95 * 60000
+    if (now.getTime() > endMs) return false // Seans süresi doldu
+    return true
+  })()
 
   return (
     <div className={`rounded-xl border ${expanded ? 'border-[#E4EAF2] p-5' : 'border-[#E4EAF2] bg-[#F2F5F9] p-4'}`} style={{ background: expanded ? '#fff' : undefined }}>
@@ -527,6 +568,14 @@ function PersonIcon({ active }: { active: boolean }) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function MessageIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
     </svg>
   )
 }

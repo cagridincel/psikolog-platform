@@ -6,6 +6,7 @@ import SlotModal from '@/components/calendar/SlotModal'
 import dynamic from 'next/dynamic'
 
 const VideoModal = dynamic(() => import('@/components/video/VideoModal'), { ssr: false })
+const MessagingPanel = dynamic(() => import('@/components/messaging/MessagingPanel'), { ssr: false })
 
 interface Slot {
   id: string
@@ -66,7 +67,7 @@ function formatRelative(dateStr: string) {
 }
 
 export default function PsychologistDashboard({
-  profile, slots: initialSlots, appointments: initialAppointments, weekStart, stats, notifications,
+  psychologistId, profile, slots: initialSlots, appointments: initialAppointments, weekStart, stats, notifications,
 }: Props) {
   const [slots, setSlots] = useState<Slot[]>(initialSlots)
   const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments)
@@ -75,7 +76,7 @@ export default function PsychologistDashboard({
   const [selectedCell, setSelectedCell] = useState<{ date: Date; hour: number } | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'notifications'>('calendar')
+  const [activeTab, setActiveTab] = useState<'calendar' | 'clients' | 'notifications' | 'messages'>('calendar')
   const [videoAppointmentId, setVideoAppointmentId] = useState<string | null>(null)
 
   const unreadCount = notifications.filter(n => !n.is_read).length
@@ -212,6 +213,7 @@ export default function PsychologistDashboard({
           {[
             { id: 'calendar', label: 'Takvim', icon: CalendarIcon },
             { id: 'clients', label: 'Danışanlarım', icon: PersonIcon },
+            { id: 'messages', label: 'Mesajlar', icon: MessageIcon },
             { id: 'notifications', label: 'Bildirimler', icon: BellIcon, badge: unreadCount },
           ].map(({ id, label, icon: Icon, badge }) => (
             <button
@@ -368,6 +370,16 @@ export default function PsychologistDashboard({
           )}
 
           {/* Bildirimler tab */}
+          {/* Mesajlar */}
+          {activeTab === 'messages' && (
+            <div className="space-y-4" style={{ height: 'calc(100vh - 140px)' }}>
+              <h2 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Mesajlar</h2>
+              <div className="h-full">
+                <MessagingPanel currentUserId={psychologistId} currentUserName={profile.full_name} role="psychologist" />
+              </div>
+            </div>
+          )}
+
           {activeTab === 'notifications' && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-[#1D3557]">Bildirimler</h2>
@@ -464,6 +476,14 @@ export default function PsychologistDashboard({
         />
       )}
     </div>
+  )
+}
+
+function MessageIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
   )
 }
 

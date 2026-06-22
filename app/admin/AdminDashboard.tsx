@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 
 const QuestionTreeEditor = dynamic(() => import('@/components/admin/QuestionTreeEditor'), { ssr: false })
+const MessagingPanel = dynamic(() => import('@/components/messaging/MessagingPanel'), { ssr: false })
+const PlatformControls = dynamic(() => import('@/components/admin/PlatformControls'), { ssr: false })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
@@ -59,7 +61,7 @@ interface Appointment {
   created_at: string
 }
 
-type Tab = 'overview' | 'psychologists' | 'users' | 'payments' | 'appointments' | 'questions'
+type Tab = 'overview' | 'psychologists' | 'users' | 'payments' | 'appointments' | 'questions' | 'messages' | 'controls'
 type PsychTab = 'pending' | 'approved'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -191,12 +193,14 @@ function Field({ label, value, onChange, type = 'text', required = false }: { la
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function AdminDashboard() {
+export default function AdminDashboard({ adminId, adminName }: { adminId: string; adminName: string }) {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [psychTab, setPsychTab] = useState<PsychTab>('pending')
   const [stats, setStats] = useState<Stats | null>(null)
   const [psychologists, setPsychologists] = useState<Psychologist[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [usersPage, setUsersPage] = useState(0)
+  const [usersHasMore, setUsersHasMore] = useState(false)
   const [payments, setPayments] = useState<Payment[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [search, setSearch] = useState('')
@@ -222,9 +226,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'users') {
       setLoading(true)
-      fetch(`/api/admin/users?search=${search}`).then(r => r.json()).then(d => { setUsers(d); setLoading(false) })
+      fetch(`/api/admin/users?search=${search}&page=${usersPage}`)
+        .then(r => r.json())
+        .then(d => {
+          setUsers(d.data ?? [])
+          setUsersHasMore(d.hasMore ?? false)
+          setLoading(false)
+        })
     }
-  }, [activeTab, search])
+  }, [activeTab, search, usersPage])
 
   useEffect(() => {
     if (activeTab === 'payments') {
@@ -263,6 +273,8 @@ export default function AdminDashboard() {
     { id: 'payments', label: 'Ödemeler' },
     { id: 'appointments', label: 'Seanslar' },
     { id: 'questions', label: 'Soru Ağacı' },
+    { id: 'messages', label: 'Mesajlar' },
+    { id: 'controls', label: 'Kontroller' },
   ]
 
   return (
@@ -457,7 +469,7 @@ export default function AdminDashboard() {
             </div>
             <input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setUsersPage(0) }}
               placeholder="İsim veya e-posta ara..."
               className="w-full max-w-sm rounded-lg px-3.5 py-2.5 text-sm outline-none bg-white"
               style={{ border: '0.5px solid #E4EAF2', color: '#1D3557' }}
@@ -498,6 +510,26 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               )}
+            </div>
+            {/* Pagination */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: '#8FA3BF' }}>Sayfa {usersPage + 1}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setUsersPage(p => Math.max(0, p - 1))}
+                  disabled={usersPage === 0 || loading}
+                  className="text-sm px-4 py-2 rounded-lg border disabled:opacity-40"
+                  style={{ borderColor: '#E4EAF2', color: '#1D3557' }}>
+                  ← Önceki
+                </button>
+                <button
+                  onClick={() => setUsersPage(p => p + 1)}
+                  disabled={!usersHasMore || loading}
+                  className="text-sm px-4 py-2 rounded-lg border disabled:opacity-40"
+                  style={{ borderColor: '#E4EAF2', color: '#1D3557' }}>
+                  Sonraki →
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -610,6 +642,28 @@ export default function AdminDashboard() {
               <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>Değerlendirme sorularını ve dallanma mantığını yönetin</p>
             </div>
             <QuestionTreeEditor />
+          </div>
+        )}
+
+        {activeTab === 'messages' && (
+          <div className="space-y-5" style={{ height: 'calc(100vh - 140px)' }}>
+            <div>
+              <h1 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Mesajlar</h1>
+              <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>Kullanıcılarla mesajlaşın</p>
+            </div>
+            <div className="h-full">
+              <MessagingPanel currentUserId={adminId} currentUserName={adminName} role="admin" />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'controls' && (
+          <div className="space-y-5">
+            <div>
+              <h1 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Platform Kontrolleri</h1>
+              <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>Platformun davranışını etkileyen ayarları buradan yönetin</p>
+            </div>
+            <PlatformControls />
           </div>
         )}
       </main>

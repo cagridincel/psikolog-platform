@@ -22,7 +22,6 @@ export async function sendNotifications(notifications: SendNotificationParams[])
   if (error) throw error
 }
 
-/** Randevu oluşturulduğunda 0/12/20. saat bildirim zamanlamalarını DB'ye yazar */
 export async function scheduleApprovalNotifications(
   appointmentId: string,
   psychologistId: string,
@@ -31,31 +30,15 @@ export async function scheduleApprovalNotifications(
   const supabase = createServiceRoleClient() as unknown as AnyClient
 
   const schedules = [
-    {
-      appointment_id: appointmentId,
-      user_id: psychologistId,
-      scheduled_at: createdAt.toISOString(),
-      notification_type: 'immediate' as const,
-    },
-    {
-      appointment_id: appointmentId,
-      user_id: psychologistId,
-      scheduled_at: new Date(createdAt.getTime() + 12 * 60 * 60 * 1000).toISOString(),
-      notification_type: 'reminder_12h' as const,
-    },
-    {
-      appointment_id: appointmentId,
-      user_id: psychologistId,
-      scheduled_at: new Date(createdAt.getTime() + 20 * 60 * 60 * 1000).toISOString(),
-      notification_type: 'reminder_4h' as const,
-    },
+    { appointment_id: appointmentId, user_id: psychologistId, scheduled_at: createdAt.toISOString(), notification_type: 'immediate' as const },
+    { appointment_id: appointmentId, user_id: psychologistId, scheduled_at: new Date(createdAt.getTime() + 12 * 60 * 60 * 1000).toISOString(), notification_type: 'reminder_12h' as const },
+    { appointment_id: appointmentId, user_id: psychologistId, scheduled_at: new Date(createdAt.getTime() + 20 * 60 * 60 * 1000).toISOString(), notification_type: 'reminder_4h' as const },
   ]
 
   const { error } = await supabase.from('notification_schedules').insert(schedules)
   if (error) throw error
 }
 
-/** Zamanı gelmiş bekleyen bildirimleri gönderir — cron job tarafından çağrılır */
 export async function processPendingNotifications() {
   const supabase = createServiceRoleClient() as unknown as AnyClient
 
@@ -68,40 +51,24 @@ export async function processPendingNotifications() {
 
   if (error || !pending) return
 
-  for (const schedule of pending) {
-    const appointment = schedule.appointments as { status: string; psychologist_id: string } | null
-    if (!appointment || appointment.status !== 'pending_approval') {
-      // Randevu zaten işlendi, bildirimi iptal et
-      await supabase
-        .from('notification_schedules')
-        .update({ is_sent: true, sent_at: new Date().toISOString() })
-        .eq('id', schedule.id)
-      continue
-    }
+  const messages: Record<string, { title: string; description: string }> = {
+    immediate:    { title: 'Yeni randevu talebi',          description: 'Bir danisaniniz randevu talep etti. Lutfen 24 saat icinde onaylayiniz.' },
+    reminder_12h: { title: 'Randevu talebi hatirlatmasi',   description: 'Bekleyen bir randevu talebiniz var. Onaylamak icin 12 saatiniz kaldi.' },
+    reminder_4h:  { title: 'Son 4 saat!',                   description: 'Randevu talebini onaylamak icin yalnizca 4 saatiniz kaldi. Otomatik reddedilecek.' },
+  }
 
-    const messages: Record<string, { title: string; description: string }> = {
-      immediate: {
-        title: 'Yeni randevu talebi',
-        description: 'Bir danisaniniz randevu talep etti. Lutfen 24 saat icinde onaylayiniz.',
-      },
-      reminder_12h: {
-        title: 'Randevu talebi hatirlatmasi',
-        description: 'Bekleyen bir randevu talebiniz var. Onaylamak icin 12 saatiniz kaldi.',
-      },
-      reminder_4h: {
-        title: 'Son 4 saat!',
-        description: 'Randevu talebini onaylamak icin yalnizca 4 saatiniz kaldi. Otomatik reddedilecek.',
-      },
-    }
+  await Promise.all(pending.map(async (schedule) => {
+    const appointment = schedule.appointments as { status: string } | null
+    const done = !appointment || appointment.status !== 'pending_approval'
 
-    const msg = messages[schedule.notification_type]
-    if (msg) {
-      await sendNotification({ userId: schedule.user_id, ...msg })
+    if (!done) {
+      const msg = messages[schedule.notification_type]
+      if (msg) await sendNotification({ userId: schedule.user_id, ...msg })
     }
 
     await supabase
       .from('notification_schedules')
       .update({ is_sent: true, sent_at: new Date().toISOString() })
       .eq('id', schedule.id)
-  }
+  }))
 }

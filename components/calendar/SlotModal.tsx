@@ -250,13 +250,29 @@ export default function SlotModal({
               {mode === 'detail' && (
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
-                    {appointment && onJoin && (
-                      <button onClick={() => { onJoin(appointment.id); onClose() }}
-                        className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                        style={{ background: C.success }}>
-                        Seansa Katıl
-                      </button>
-                    )}
+                    {appointment && onJoin && slot && (() => {
+                      const now = new Date()
+                      const start = new Date(slot.start_time)
+                      const diffMins = (start.getTime() - now.getTime()) / 60000
+                      const expired = now.getTime() > start.getTime() + 95 * 60000
+                      const tooEarly = diffMins > 20
+                      const canJoin = !tooEarly && !expired
+                      return canJoin ? (
+                        <button onClick={() => { onJoin(appointment.id); onClose() }}
+                          className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                          style={{ background: C.success }}>
+                          Seansa Katıl
+                        </button>
+                      ) : expired ? (
+                        <div className="flex-1 py-2.5 rounded-xl text-sm text-center" style={{ color: C.muted, background: '#F2F5F9' }}>
+                          Seans süresi doldu
+                        </div>
+                      ) : (
+                        <div className="flex-1 py-2.5 rounded-xl text-sm text-center" style={{ color: C.muted, background: '#F2F5F9' }}>
+                          {Math.ceil(diffMins - 20)}dk sonra aktif
+                        </div>
+                      )
+                    })()}
                     <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium border" style={{ borderColor: C.border, color: C.navy }}>
                       Kapat
                     </button>

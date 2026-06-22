@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const { psychologistId, slotId, packageId, amount, sessionCount } = await req.json()
 
   if (!psychologistId || !slotId || sessionCount == null || sessionCount < 1) {
-    return NextResponse.json({ error: 'Eksik parametre', received: { psychologistId, slotId, amount, sessionCount } }, { status: 400 })
+    return NextResponse.json({ error: 'Eksik parametre' }, { status: 400 })
   }
 
   const service = createServiceRoleClient() as unknown as AnyClient
