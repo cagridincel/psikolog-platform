@@ -163,6 +163,16 @@ export default function VideoModal({ appointmentId, onClose, participantName }: 
     onClose()
   }
 
+  async function handleEndSession() {
+    // Psikolog bitirirse seansı complete yap
+    if (session?.isPsychologist) {
+      try {
+        await fetch(`/api/appointments/${appointmentId}/complete`, { method: 'POST' })
+      } catch { /* sessizce geç */ }
+    }
+    handleLeave()
+  }
+
   function toggleMic() {
     if (!callFrameRef.current) return
     if (micOn) callFrameRef.current.setLocalAudio(false)
@@ -192,8 +202,8 @@ export default function VideoModal({ appointmentId, onClose, participantName }: 
   const C = { bg: '#0D0D0D', surface: '#181c25', border: 'rgba(255,255,255,0.08)', text: '#F5F0E8', muted: 'rgba(255,255,255,0.45)', blue: '#1A6BB5', danger: '#ef4444' }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: 'rgba(29,53,87,0.5)', backdropFilter: 'blur(4px)' }}>
-      <div className="w-full max-w-5xl rounded-2xl overflow-hidden flex flex-col" style={{ background: C.bg, height: '85vh' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(29,53,87,0.5)', backdropFilter: 'blur(4px)' }}>
+      <div className="w-full max-w-5xl rounded-2xl flex flex-col" style={{ background: C.bg, height: '90vh', minHeight: 500, overflow: 'hidden' }}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ background: C.surface, borderBottom: `0.5px solid ${C.border}` }}>
@@ -290,7 +300,7 @@ export default function VideoModal({ appointmentId, onClose, participantName }: 
               : <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2zM3 3l18 18"/>}
           />
 
-          {/* Bitir */}
+          {/* Ayrıl */}
           <div className="flex flex-col items-center gap-1">
             <button onClick={handleLeave}
               className="w-14 h-14 rounded-full flex items-center justify-center transition-opacity hover:opacity-90"
@@ -300,7 +310,7 @@ export default function VideoModal({ appointmentId, onClose, participantName }: 
                 <line x1="23" y1="1" x2="1" y2="23"/>
               </svg>
             </button>
-            <span className="text-xs" style={{ color: '#ef4444', opacity: 0.6 }}>Bitir</span>
+            <span className="text-xs" style={{ color: '#ef4444', opacity: 0.6 }}>Ayrıl</span>
           </div>
 
           <CtrlBtn onClick={toggleScreen} active={!sharing} label="Paylaş"

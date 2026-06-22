@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8) // 08:00 - 21:00
+const HOURS = Array.from({ length: 24 }, (_, i) => i) // 00:00 - 23:00
 const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
 interface Slot {

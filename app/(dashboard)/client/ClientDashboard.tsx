@@ -13,6 +13,19 @@ interface Payment {
   psychologist_id: string
 }
 
+interface PaymentRecord {
+  id: string
+  amount_paid: number
+  total_sessions_credited: number
+  sessions_used: number
+  status: string
+  created_at: string
+  psychologist_id: string
+  psychologist_name: string
+  psychologist_avatar: string | null
+  iyzico_payment_id: string | null
+}
+
 interface Psychologist {
   id: string
   full_name: string
@@ -44,6 +57,7 @@ interface Props {
   psychologist: Psychologist | null
   upcomingAppointments: Appointment[]
   notifications: Notification[]
+  payments: PaymentRecord[]
 }
 
 function formatDate(dateStr: string) {
@@ -84,9 +98,9 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function ClientDashboard({
   userName, userAvatar, activePayment, psychologist,
-  upcomingAppointments, notifications,
+  upcomingAppointments, notifications, payments,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'psychologist' | 'notifications'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'psychologist' | 'notifications' | 'payments'>('home')
   const [videoAppointmentId, setVideoAppointmentId] = useState<string | null>(null)
   const unreadCount = notifications.filter(n => !n.is_read).length
   const remainingSessions = activePayment
@@ -114,6 +128,7 @@ export default function ClientDashboard({
             { id: 'home', label: 'Ana Sayfa', icon: HomeIcon },
             { id: 'sessions', label: 'Seanslarım', icon: CalendarIcon },
             { id: 'psychologist', label: 'Psikologum', icon: PersonIcon },
+            { id: 'payments', label: 'Ödemelerim', icon: CreditCardIcon },
             { id: 'notifications', label: 'Bildirimler', icon: BellIcon, badge: unreadCount },
           ].map(({ id, label, icon: Icon, badge }) => (
             <button
@@ -327,6 +342,81 @@ export default function ClientDashboard({
             </div>
           )}
 
+          {/* Ödemeler tab */}
+          {activeTab === 'payments' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Ödemelerim</h2>
+
+              {payments.length === 0 ? (
+                <div className="bg-white rounded-2xl border p-12 text-center" style={{ borderColor: '#E4EAF2' }}>
+                  <p className="text-sm" style={{ color: '#8FA3BF' }}>Henüz ödeme geçmişi yok.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {payments.map(p => {
+                    const remaining = p.total_sessions_credited - p.sessions_used
+                    const isActive = p.status === 'paid' && remaining > 0
+                    const isCancelled = p.status === 'cancelled'
+                    const isCompleted = p.status === 'paid' && remaining <= 0
+
+                    return (
+                      <div key={p.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: '#E4EAF2' }}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 overflow-hidden"
+                              style={{ background: '#EBF3FC', color: '#1A6BB5' }}>
+                              {p.psychologist_avatar
+                                ? <img src={p.psychologist_avatar} className="w-10 h-10 object-cover" alt="" />
+                                : p.psychologist_name?.[0] ?? '?'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium" style={{ color: '#1D3557' }}>{p.psychologist_name}</p>
+                              <p className="text-xs mt-0.5" style={{ color: '#8FA3BF' }}>
+                                {new Date(p.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-base font-medium" style={{ color: '#1D3557' }}>
+                              ₺{p.amount_paid?.toLocaleString('tr-TR') ?? '—'}
+                            </p>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block" style={{
+                              background: isActive ? '#EBF3FC' : isCancelled ? '#FDECEA' : '#E8F5EE',
+                              color: isActive ? '#1A6BB5' : isCancelled ? '#B91C1C' : '#1A7A4A',
+                            }}>
+                              {isActive ? 'Aktif' : isCancelled ? 'İptal' : 'Tamamlandı'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Seans progress */}
+                        <div className="mt-4 pt-4 border-t" style={{ borderColor: '#F2F5F9' }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs" style={{ color: '#8FA3BF' }}>Seans kullanımı</span>
+                            <span className="text-xs font-medium" style={{ color: '#1D3557' }}>
+                              {p.sessions_used} / {p.total_sessions_credited} seans
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F2F5F9' }}>
+                            <div className="h-full rounded-full transition-all" style={{
+                              width: `${Math.min((p.sessions_used / p.total_sessions_credited) * 100, 100)}%`,
+                              background: isActive ? '#1A6BB5' : isCancelled ? '#B91C1C' : '#1A7A4A',
+                            }} />
+                          </div>
+                          {isActive && remaining > 0 && (
+                            <p className="text-xs mt-2" style={{ color: '#1A6BB5' }}>
+                              {remaining} seans hakkınız kaldı
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Bildirimler tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-4">
@@ -437,6 +527,15 @@ function PersonIcon({ active }: { active: boolean }) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function CreditCardIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+      <line x1="1" y1="10" x2="23" y2="10"/>
     </svg>
   )
 }

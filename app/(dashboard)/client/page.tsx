@@ -52,6 +52,37 @@ export default async function ClientDashboardPage() {
     .order('created_at', { ascending: false })
     .limit(10) as { data: { id: string; title: string; description: string; is_read: boolean; created_at: string }[] | null }
 
+  // Tüm ödeme geçmişi + psikolog adları
+  const { data: allPayments } = await db
+    .from('payments')
+    .select('id, amount_paid, total_sessions_credited, sessions_used, status, created_at, psychologist_id, iyzico_payment_id')
+    .eq('client_id', user.id)
+    .order('created_at', { ascending: false }) as {
+      data: {
+        id: string
+        amount_paid: number
+        total_sessions_credited: number
+        sessions_used: number
+        status: string
+        created_at: string
+        psychologist_id: string
+        iyzico_payment_id: string | null
+      }[] | null
+    }
+
+  // Psikolog isimlerini çek
+  const psychIds = [...new Set((allPayments ?? []).map(p => p.psychologist_id))]
+  const { data: psychProfiles } = psychIds.length > 0
+    ? await db.from('profiles').select('id, full_name, avatar_url').in('id', psychIds) as { data: { id: string; full_name: string; avatar_url: string | null }[] | null }
+    : { data: [] as { id: string; full_name: string; avatar_url: string | null }[] }
+
+  const psychMap = Object.fromEntries((psychProfiles ?? []).map(p => [p.id, p]))
+  const paymentsWithPsych = (allPayments ?? []).map(p => ({
+    ...p,
+    psychologist_name: psychMap[p.psychologist_id]?.full_name ?? '',
+    psychologist_avatar: psychMap[p.psychologist_id]?.avatar_url ?? null,
+  }))
+
   return (
     <ClientDashboard
       userName={userProfile?.full_name ?? user.email ?? 'Kullanıcı'}
@@ -60,6 +91,7 @@ export default async function ClientDashboardPage() {
       psychologist={psychologistProfile}
       upcomingAppointments={upcomingAppointments ?? []}
       notifications={notifications ?? []}
+      payments={paymentsWithPsych}
     />
   )
 }

@@ -76,10 +76,13 @@ export default async function Page() {
     .eq('psychologist_id', user.id)
     .eq('status', 'pending_approval') as { count: number | null }
 
-  const { count: totalClients } = await db
+  // Unique danışan sayısı — distinct client_id
+  const { data: clientIdRows } = await db
     .from('appointments')
-    .select('client_id', { count: 'exact', head: true })
-    .eq('psychologist_id', user.id) as { count: number | null }
+    .select('client_id')
+    .eq('psychologist_id', user.id) as { data: { client_id: string }[] | null }
+
+  const totalClients = new Set((clientIdRows ?? []).map(r => r.client_id)).size
 
   const { data: notifications } = await db
     .from('notifications')
@@ -98,7 +101,7 @@ export default async function Page() {
       stats={{
         totalSessions: totalSessions ?? 0,
         pendingCount: pendingCount ?? 0,
-        totalClients: totalClients ?? 0,
+        totalClients,
         availableSlots: (slots ?? []).filter(s => s.status === 'available').length,
       }}
       notifications={notifications ?? []}

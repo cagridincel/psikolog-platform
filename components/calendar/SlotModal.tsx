@@ -25,7 +25,7 @@ interface Client {
 }
 
 interface Props {
-  mode: 'add' | 'delete' | 'approve' | 'detail'
+  mode: 'add' | 'delete' | 'approve' | 'detail' | 'completed'
   slot: Slot | null
   appointment: Appointment | null
   cell: { date: Date; hour: number } | null
@@ -37,6 +37,7 @@ interface Props {
   onClose: () => void
   onJoin?: (appointmentId: string) => void
   onManualCreated?: () => void
+  onComplete?: (appointmentId: string) => void
 }
 
 function formatSlotTime(startTime: string) {
@@ -67,7 +68,7 @@ function Avatar({ name, src }: { name: string; src?: string | null }) {
 
 export default function SlotModal({
   mode, slot, appointment, cell, loading,
-  onAdd, onDelete, onAccept, onReject, onClose, onJoin, onManualCreated
+  onAdd, onDelete, onAccept, onReject, onClose, onJoin, onManualCreated, onComplete
 }: Props) {
   const [view, setView] = useState<'main' | 'selectClient' | 'warning' | 'success'>('main')
   const [clients, setClients] = useState<Client[]>([])
@@ -129,7 +130,8 @@ export default function SlotModal({
               <p className="text-xs font-medium mb-1" style={{ color: C.muted, letterSpacing: '0.06em' }}>
                 {mode === 'add' ? 'SLOT EKLE' :
                  mode === 'delete' ? 'UYGUN SLOT' :
-                 mode === 'approve' ? 'RANDEVU TALEBİ' : 'ONAYLI SEANS'}
+                 mode === 'approve' ? 'RANDEVU TALEBİ' :
+                 mode === 'completed' ? 'TAMAMLANAN SEANS' : 'ONAYLI SEANS'}
               </p>
               <p className="text-sm font-medium" style={{ color: C.navy }}>{timeLabel}</p>
             </div>
@@ -163,6 +165,26 @@ export default function SlotModal({
                   <p className="text-sm" style={{ color: C.muted }}>
                     Talebi onaylarsanız görüşme odası otomatik oluşturulur.
                   </p>
+                </div>
+              )}
+
+              {mode === 'completed' && (
+                <div>
+                  {appointment?.profiles && (
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar name={appointment.profiles.full_name} src={appointment.profiles.avatar_url} />
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: C.navy }}>{appointment.profiles.full_name}</p>
+                        <p className="text-xs" style={{ color: C.muted }}>Seans tamamlandı</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: C.successTint }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span className="text-xs font-medium" style={{ color: C.success }}>Bu seans başarıyla tamamlandı</span>
+                  </div>
                 </div>
               )}
 
@@ -219,18 +241,34 @@ export default function SlotModal({
                 </div>
               )}
 
+              {mode === 'completed' && (
+                <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm font-medium border" style={{ borderColor: C.border, color: C.navy }}>
+                  Kapat
+                </button>
+              )}
+
               {mode === 'detail' && (
-                <div className="flex gap-2">
-                  {appointment && onJoin && (
-                    <button onClick={() => { onJoin(appointment.id); onClose() }}
-                      className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                      style={{ background: C.success }}>
-                      Seansa Katıl
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {appointment && onJoin && (
+                      <button onClick={() => { onJoin(appointment.id); onClose() }}
+                        className="flex-1 py-2.5 rounded-xl text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                        style={{ background: C.success }}>
+                        Seansa Katıl
+                      </button>
+                    )}
+                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium border" style={{ borderColor: C.border, color: C.navy }}>
+                      Kapat
+                    </button>
+                  </div>
+                  {appointment && onComplete && (
+                    <button
+                      onClick={() => { onComplete(appointment.id); onClose() }}
+                      className="w-full py-2.5 rounded-xl text-sm font-medium border hover:opacity-90 transition-opacity"
+                      style={{ borderColor: C.danger, color: C.danger, background: C.dangerTint }}>
+                      Seansı Bitir
                     </button>
                   )}
-                  <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium border" style={{ borderColor: C.border, color: C.navy }}>
-                    Kapat
-                  </button>
                 </div>
               )}
             </div>

@@ -11,6 +11,13 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
 
   // Sadece available slotlar silinebilir
+  // Bağlı appointment varsa slot_id'yi null yap (iptal edilmiş/test verisi)
+  await supabase
+    .from('appointments')
+    .update({ slot_id: null })
+    .eq('slot_id', slotId)
+    .in('status', ['cancelled', 'pending_approval'])
+
   const { error } = await supabase
     .from('slots')
     .delete()
@@ -18,6 +25,9 @@ export async function DELETE(
     .eq('psychologist_id', user.id)
     .eq('status', 'available')
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('Slot delete error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ success: true })
 }
