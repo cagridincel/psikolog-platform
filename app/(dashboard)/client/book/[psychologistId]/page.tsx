@@ -16,7 +16,11 @@ export default async function Page({ params }: Props) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, full_name, bio, specialties, price_per_session, avatar_url')
+    .select(`
+      id, full_name, bio, specialties, price_per_session, avatar_url,
+      experience_years, languages, approaches, age_groups,
+      session_duration, session_types, education, certificates, gender
+    `)
     .eq('id', psychologistId)
     .eq('is_approved', true)
     .single()

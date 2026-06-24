@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
+import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -74,7 +75,15 @@ function LoginForm() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <Input label="E-POSTA" type="email" value={email} onChange={setEmail} placeholder="ad@ornek.com" required />
-            <Input label="ŞİFRE" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium" style={{ color: COLORS.muted, letterSpacing: '0.06em' }}>ŞİFRE</label>
+                <Link href="/auth/sifre-sifirla" className="text-xs" style={{ color: COLORS.blue }}>
+                  Şifremi unuttum
+                </Link>
+              </div>
+              <Input label="" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
+            </div>
             {error && <div className="text-sm rounded-lg px-3.5 py-2.5" style={{ background: COLORS.dangerTint, color: COLORS.danger }}>{error}</div>}
             <button type="submit" disabled={loading}
               className="w-full py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-opacity hover:opacity-90"

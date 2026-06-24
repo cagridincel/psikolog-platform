@@ -14,7 +14,7 @@ export async function GET() {
     .from('appointments')
     .select('id, slot_id, status, client_id')
     .eq('psychologist_id', user.id)
-    .in('status', ['pending_approval', 'scheduled']) as {
+    .in('status', ['pending_approval', 'scheduled', 'completed']) as {
       data: { id: string; slot_id: string; status: string; client_id: string }[] | null
     }
 

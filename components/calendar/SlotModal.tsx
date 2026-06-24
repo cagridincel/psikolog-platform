@@ -242,9 +242,18 @@ export default function SlotModal({
               )}
 
               {mode === 'completed' && (
-                <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm font-medium border" style={{ borderColor: C.border, color: C.navy }}>
-                  Kapat
-                </button>
+                <div className="flex flex-col gap-2">
+                  {appointment && (
+                    <a href={`/psychologist/notes/${appointment.id}`}
+                      className="w-full py-2.5 rounded-xl text-sm font-medium text-center hover:opacity-90 transition-opacity"
+                      style={{ background: C.blue, color: '#fff' }}>
+                      {appointment.id ? 'Klinik Not Ekle / Görüntüle' : 'Klinik Not'}
+                    </a>
+                  )}
+                  <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm font-medium border" style={{ borderColor: C.border, color: C.navy }}>
+                    Kapat
+                  </button>
+                </div>
               )}
 
               {mode === 'detail' && (

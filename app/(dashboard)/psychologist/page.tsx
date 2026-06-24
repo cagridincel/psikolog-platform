@@ -51,7 +51,7 @@ export default async function Page() {
     .from('appointments')
     .select('id, slot_id, status, client_id')
     .eq('psychologist_id', user.id)
-    .in('status', ['pending_approval', 'scheduled']) as { data: { id: string; slot_id: string; status: string; client_id: string }[] | null }
+    .in('status', ['pending_approval', 'scheduled', 'completed']) as { data: { id: string; slot_id: string; status: string; client_id: string }[] | null }
 
   const clientIds = [...new Set((rawAppointments ?? []).map((a) => a.client_id))]
   const { data: clientProfiles } = clientIds.length > 0
