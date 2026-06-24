@@ -49,19 +49,30 @@ export default async function Page() {
 
   const { data: rawAppointments } = await db
     .from('appointments')
-    .select('id, slot_id, status, client_id')
+    .select('id, slot_id, status, client_id, slot_start_time')
     .eq('psychologist_id', user.id)
-    .in('status', ['pending_approval', 'scheduled', 'completed']) as { data: { id: string; slot_id: string; status: string; client_id: string }[] | null }
+    .in('status', ['pending_approval', 'scheduled', 'completed'])
+    .order('slot_start_time', { ascending: false }) as {
+      data: { id: string; slot_id: string; status: string; client_id: string; slot_start_time: string | null }[] | null
+    }
 
   const clientIds = [...new Set((rawAppointments ?? []).map((a) => a.client_id))]
   const { data: clientProfiles } = clientIds.length > 0
     ? await db.from('profiles').select('id, full_name, avatar_url').in('id', clientIds) as { data: { id: string; full_name: string; avatar_url: string | null }[] | null }
     : { data: [] as { id: string; full_name: string; avatar_url: string | null }[] }
 
+  // completed_sessions — klinik not var mı?
+  const aptIds = (rawAppointments ?? []).filter(a => a.status === 'completed').map(a => a.id)
+  const { data: completedSessions } = aptIds.length > 0
+    ? await db.from('completed_sessions').select('appointment_id, clinical_notes').in('appointment_id', aptIds) as { data: { appointment_id: string; clinical_notes: string | null }[] | null }
+    : { data: [] as { appointment_id: string; clinical_notes: string | null }[] }
+
+  const notesMap = Object.fromEntries((completedSessions ?? []).map(s => [s.appointment_id, !!s.clinical_notes]))
   const profileMap = Object.fromEntries((clientProfiles ?? []).map((p) => [p.id, p]))
   const appointments = (rawAppointments ?? []).map((a) => ({
     ...a,
     profiles: profileMap[a.client_id] ?? null,
+    hasNote: notesMap[a.id] ?? false,
   }))
 
   const { count: totalSessions } = await db

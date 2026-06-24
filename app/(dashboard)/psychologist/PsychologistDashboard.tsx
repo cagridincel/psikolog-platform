@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import WeeklyCalendar from '@/components/calendar/WeeklyCalendar'
 import SlotModal from '@/components/calendar/SlotModal'
 import dynamic from 'next/dynamic'
@@ -20,6 +20,8 @@ interface Appointment {
   slot_id: string
   status: string
   client_id: string
+  slot_start_time: string | null
+  hasNote: boolean
   profiles: { full_name: string; avatar_url: string | null } | null
 }
 
@@ -336,37 +338,7 @@ export default function PsychologistDashboard({
 
           {/* Danışanlar tab */}
           {activeTab === 'clients' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-[#1D3557]">Danışanlarım</h2>
-              {appointments.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-[#E4EAF2] p-12 text-center">
-                  <p className="text-[#8FA3BF]">Henüz aktif danışan bulunmuyor.</p>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-[#E4EAF2] divide-y divide-gray-50">
-                  {appointments.map((apt) => (
-                    <div key={apt.id} className="flex items-center gap-4 px-6 py-4">
-                      <div className="w-10 h-10 rounded-full bg-[#EBF3FC] flex items-center justify-center text-[#1D3557] font-semibold text-sm flex-shrink-0 overflow-hidden">
-                        {apt.profiles?.avatar_url
-                          ? <img src={apt.profiles.avatar_url} className="w-10 h-10 object-cover" alt="" />
-                          : (apt.profiles?.full_name?.[0] ?? '?')}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800">{apt.profiles?.full_name ?? 'Danışan'}</p>
-                        <p className="text-xs text-[#8FA3BF] mt-0.5">Seans #{apt.id.slice(0, 6)}</p>
-                      </div>
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                        apt.status === 'scheduled'
-                          ? 'bg-[#E8F5EE] text-[#1A7A4A]'
-                          : 'bg-[#FEF3E2] text-[#92600A]'
-                      }`}>
-                        {apt.status === 'scheduled' ? 'Onaylı' : 'Onay Bekliyor'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ClientsTab appointments={appointments} />
           )}
 
           {/* Bildirimler tab */}
@@ -515,5 +487,136 @@ function BellIcon({ active }: { active: boolean }) {
       <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 01-3.46 0" />
     </svg>
+  )
+}
+
+const C = { navy: '#1D3557', blue: '#1A6BB5', blueTint: '#EBF3FC', muted: '#8FA3BF', border: '#E4EAF2', bg: '#F2F5F9', success: '#1A7A4A', successTint: '#E8F5EE', warning: '#92600A', warningTint: '#FEF3E2', danger: '#B91C1C', dangerTint: '#FDECEA' }
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    scheduled:        { label: 'Onaylı',        bg: C.successTint, color: C.success },
+    pending_approval: { label: 'Onay Bekliyor', bg: C.warningTint, color: C.warning },
+    completed:        { label: 'Tamamlandı',    bg: C.bg,          color: C.muted },
+    cancelled:        { label: 'İptal',          bg: C.dangerTint,  color: C.danger },
+  }
+  const s = map[status] ?? { label: status, bg: C.bg, color: C.muted }
+  return (
+    <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+      style={{ background: s.bg, color: s.color }}>
+      {s.label}
+    </span>
+  )
+}
+
+function formatSlotDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) +
+    ' · ' + new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function ClientsTab({ appointments }: { appointments: Appointment[] }) {
+  const [openClients, setOpenClients] = useState<Set<string>>(new Set())
+
+  // Danışana göre grupla
+  const grouped = useMemo(() => {
+    const map: Record<string, { profile: Appointment['profiles']; appointments: Appointment[] }> = {}
+    for (const apt of appointments) {
+      if (!map[apt.client_id]) {
+        map[apt.client_id] = { profile: apt.profiles, appointments: [] }
+      }
+      map[apt.client_id].appointments.push(apt)
+    }
+    return Object.entries(map)
+  }, [appointments])
+
+  function toggleClient(clientId: string) {
+    setOpenClients(prev => {
+      const next = new Set(prev)
+      if (next.has(clientId)) next.delete(clientId)
+      else next.add(clientId)
+      return next
+    })
+  }
+
+  if (grouped.length === 0) return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-medium" style={{ color: C.navy }}>Danışanlarım</h2>
+      <div className="bg-white rounded-2xl border p-12 text-center" style={{ borderColor: C.border }}>
+        <p className="text-sm" style={{ color: C.muted }}>Henüz aktif danışan bulunmuyor.</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-medium" style={{ color: C.navy, letterSpacing: '-0.01em' }}>
+        Danışanlarım <span className="text-base font-normal" style={{ color: C.muted }}>({grouped.length})</span>
+      </h2>
+
+      <div className="space-y-3">
+        {grouped.map(([clientId, { profile, appointments: apts }]) => {
+          const isOpen = openClients.has(clientId)
+          const lastApt = apts[0]
+          const completedCount = apts.filter(a => a.status === 'completed').length
+          const pendingCount = apts.filter(a => a.status === 'pending_approval').length
+
+          return (
+            <div key={clientId} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: C.border }}>
+              {/* Danışan header */}
+              <button onClick={() => toggleClient(clientId)}
+                className="w-full flex items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-gray-50">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 overflow-hidden"
+                  style={{ background: C.blueTint, color: C.blue }}>
+                  {profile?.avatar_url
+                    ? <img src={profile.avatar_url} className="w-10 h-10 object-cover" alt="" />
+                    : profile?.full_name?.[0] ?? '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium" style={{ color: C.navy }}>{profile?.full_name ?? 'Danışan'}</p>
+                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>
+                    {apts.length} seans
+                    {completedCount > 0 && ` · ${completedCount} tamamlandı`}
+                    {pendingCount > 0 && ` · ${pendingCount} bekliyor`}
+                    {lastApt?.slot_start_time && ` · Son: ${new Date(lastApt.slot_start_time).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}`}
+                  </p>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+
+              {/* Seans listesi */}
+              {isOpen && (
+                <div style={{ borderTop: `0.5px solid ${C.border}` }}>
+                  {apts.map((apt, i) => (
+                    <div key={apt.id}
+                      className="flex items-center gap-3 px-5 py-3"
+                      style={{ borderTop: i > 0 ? `0.5px solid ${C.bg}` : 'none' }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs" style={{ color: C.muted }}>
+                          {apt.slot_start_time ? formatSlotDate(apt.slot_start_time) : `Seans #${apt.id.slice(0, 6)}`}
+                        </p>
+                      </div>
+                      <StatusBadge status={apt.status} />
+                      {apt.status === 'completed' && (
+                        <a href={`/psychologist/notes/${apt.id}`}
+                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium flex-shrink-0 transition-opacity hover:opacity-80"
+                          style={{
+                            background: apt.hasNote ? C.blueTint : C.bg,
+                            color: apt.hasNote ? C.blue : C.muted,
+                            border: `0.5px solid ${apt.hasNote ? C.blue : C.border}`,
+                          }}>
+                          {apt.hasNote ? '📝 Notu Gör' : 'Not Ekle'}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
