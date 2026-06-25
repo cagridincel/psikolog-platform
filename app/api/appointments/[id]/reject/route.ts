@@ -20,7 +20,17 @@ export async function POST(
     .select('*')
     .eq('id', appointmentId)
     .eq('psychologist_id', user.id)
-    .single()
+    .single() as unknown as {
+      data: {
+        id: string
+        client_id: string
+        psychologist_id: string
+        slot_id: string
+        status: string
+        payment_id: string | null
+      } | null
+      error: unknown
+    }
 
   if (fetchError || !appointment) {
     return NextResponse.json({ error: 'Randevu bulunamadi' }, { status: 404 })
