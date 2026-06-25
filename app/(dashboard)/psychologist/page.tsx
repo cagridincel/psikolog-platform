@@ -45,7 +45,7 @@ export default async function Page() {
     .eq('psychologist_id', user.id)
     .gte('start_time', weekStart.toISOString())
     .lt('start_time', weekEnd.toISOString())
-    .order('start_time') as { data: { id: string; start_time: string; end_time: string; status: string }[] | null }
+    .order('start_time') as { data: { id: string; start_time: string; end_time: string; status: 'available' | 'requested' | 'booked' | 'completed' }[] | null }
 
   const { data: rawAppointments } = await db
     .from('appointments')
