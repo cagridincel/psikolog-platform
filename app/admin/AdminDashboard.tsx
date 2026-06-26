@@ -282,7 +282,7 @@ export default function AdminDashboard({ adminId, adminName }: { adminId: string
       {showAddModal && <AddPsychologistModal onClose={() => setShowAddModal(false)} onSuccess={fetchPsychologists} />}
 
       {/* Sidebar */}
-      <aside className="w-56 bg-white border-r flex flex-col fixed h-full z-20" style={{ borderColor: '#E4EAF2' }}>
+      <aside className="hidden md:flex w-56 bg-white border-r flex-col fixed h-full z-20" style={{ borderColor: '#E4EAF2' }}>
         <div className="px-5 py-5 border-b" style={{ borderColor: '#E4EAF2' }}>
           <div className="text-sm font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Menta</div>
           <div className="text-xs mt-0.5" style={{ color: '#8FA3BF', letterSpacing: '0.06em' }}>ADMIN PANELİ</div>
@@ -312,7 +312,7 @@ export default function AdminDashboard({ adminId, adminName }: { adminId: string
       </aside>
 
       {/* Main */}
-      <main className="ml-56 flex-1 p-8">
+      <main className="md:ml-56 flex-1 p-4 md:p-8 pb-24 md:pb-8">
 
         {/* GENEL BAKIŞ */}
         {activeTab === 'overview' && (
@@ -321,7 +321,7 @@ export default function AdminDashboard({ adminId, adminName }: { adminId: string
               <h1 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Genel Bakış</h1>
               <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>Platform istatistikleri</p>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {[
                 { label: 'TOPLAM KULLANICI', value: fmt(stats?.totalUsers ?? 0), color: '#1A6BB5' },
                 { label: 'AKTİF PSİKOLOG', value: fmt(stats?.totalPsychologists ?? 0), color: '#1D3557' },

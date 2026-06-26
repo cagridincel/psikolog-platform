@@ -107,14 +107,14 @@ export default function BookingPage({ profile, slots, activePackage }: Props) {
 
   return (
     <main className="min-h-screen" style={{ background: C.bg }}>
-      <header className="bg-white border-b px-8 py-4 sticky top-0 z-10" style={{ borderColor: C.border }}>
+      <header className="bg-white border-b px-4 md:px-8 py-4 sticky top-0 z-10" style={{ borderColor: C.border }}>
         <div className="max-w-5xl mx-auto flex items-center gap-4">
           <button onClick={() => router.back()} className="text-sm" style={{ color: C.muted }}>← Geri</button>
           <span className="text-sm font-medium" style={{ color: C.navy }}>{profile.full_name}</span>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Sol: Psikolog profili */}
         <div className="lg:col-span-2 space-y-4">
@@ -188,7 +188,7 @@ export default function BookingPage({ profile, slots, activePackage }: Props) {
             )}
 
             {/* Yaş grupları & Diller */}
-            <div className="grid grid-cols-2 gap-6 pt-5 border-t" style={{ borderColor: C.border }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-5 border-t" style={{ borderColor: C.border }}>
               {(profile.age_groups?.length ?? 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium mb-2" style={{ color: C.muted, letterSpacing: '0.06em' }}>YAŞ GRUPLARI</p>

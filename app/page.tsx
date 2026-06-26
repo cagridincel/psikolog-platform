@@ -31,7 +31,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen" style={{ background: '#F2F5F9' }}>
       {/* Header */}
-      <header className="bg-white border-b px-8 py-4 flex items-center justify-between sticky top-0 z-10" style={{ borderColor: '#E4EAF2' }}>
+      <header className="bg-white border-b px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10" style={{ borderColor: '#E4EAF2' }}>
         <div>
           <span className="text-base font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Menta</span>
           <span style={{ color: '#1A6BB5' }}>.</span>
@@ -61,7 +61,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-8 pt-16 pb-12">
+      <section className="max-w-5xl mx-auto px-4 md:px-8 pt-12 md:pt-16 pb-12">
         <p className="text-xs font-medium mb-4" style={{ color: '#1A6BB5', letterSpacing: '0.1em' }}>SEÇİLMİŞ UZMANLAR · ONLINE SEANS</p>
         <h1 className="text-4xl font-medium mb-4" style={{ color: '#1D3557', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
           Zihinsel sağlığınız için<br />en iyi uzmanlara erişin
@@ -84,7 +84,7 @@ export default function HomePage() {
       </section>
 
       {/* Psikolog listesi */}
-      <section id="list" className="max-w-5xl mx-auto px-8 pb-16">
+      <section id="list" className="max-w-5xl mx-auto px-4 md:px-8 pb-16">
         <div className="flex items-center justify-between mb-6">
           <p className="text-xs font-medium" style={{ color: '#8FA3BF', letterSpacing: '0.08em' }}>
             {psychologists.length} UZMAN

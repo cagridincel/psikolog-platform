@@ -121,8 +121,9 @@ export default function ClientDashboard({
           onClose={() => setVideoAppointmentId(null)}
         />
       )}
-      {/* Sidebar */}
-      <aside className="w-56 bg-white border-r border-[#E4EAF2] flex flex-col py-6 px-4 fixed h-full z-20">
+
+      {/* Sidebar — desktop */}
+      <aside className="hidden md:flex w-56 bg-white border-r border-[#E4EAF2] flex-col py-6 px-4 fixed h-full z-20">
         <div className="mb-8 px-2">
           <span className="text-lg font-bold text-[#1D3557] tracking-tight">Psikolog<span className="text-[#1A6BB5]">.</span></span>
         </div>
@@ -186,8 +187,8 @@ export default function ClientDashboard({
       </aside>
 
       {/* Main content */}
-      <main className="ml-56 flex-1 flex">
-        <div className="flex-1 p-8 max-w-3xl">
+      <main className="md:ml-56 flex-1 flex min-w-0">
+        <div className="flex-1 p-4 md:p-8 max-w-3xl pb-24 md:pb-8">
 
           {/* Ana Sayfa */}
           {activeTab === 'home' && (
@@ -494,6 +495,37 @@ export default function ClientDashboard({
           </div>
         </div>
       </main>
+
+      {/* Mobil bottom navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E4EAF2] z-30 px-2 py-2">
+        <div className="flex items-center justify-around">
+          {[
+            { id: 'home', label: 'Ana Sayfa', icon: HomeIcon },
+            { id: 'sessions', label: 'Seanslar', icon: CalendarIcon },
+            { id: 'psychologist', label: 'Psikolog', icon: PersonIcon },
+            { id: 'messages', label: 'Mesajlar', icon: MessageIcon },
+            { id: 'notifications', label: 'Bildirim', icon: BellIcon, badge: unreadCount },
+          ].map(({ id, label, icon: Icon, badge }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as typeof activeTab)}
+              className="flex flex-col items-center gap-1 px-3 py-1 relative"
+            >
+              <div className={activeTab === id ? 'text-[#1A6BB5]' : 'text-[#8FA3BF]'}>
+                <Icon active={activeTab === id} />
+              </div>
+              <span className={`text-[10px] font-medium ${activeTab === id ? 'text-[#1A6BB5]' : 'text-[#8FA3BF]'}`}>
+                {label}
+              </span>
+              {badge ? (
+                <span className="absolute -top-0.5 right-1 bg-[#1A6BB5] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {badge > 9 ? '9+' : badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }
