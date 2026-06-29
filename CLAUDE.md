@@ -412,10 +412,32 @@ CRON_SECRET=menta123
 
 ---
 
+## Bu Oturumda Tamamlananlar (27 Haziran 2026)
+
+### Ana Sayfa Yenilendi
+- Hero, Nasıl Çalışır, Neden Menta, İstatistikler, Psikolog listesi, Yorumlar, SSS, CTA banner, Footer bölümleri eklendi
+- Mobil carousel (yorumlar), accordion (SSS), sayaçlı istatistikler
+- Scroll-triggered count-up animasyonu
+
+### Mobil Responsive
+- Dashboard sidebar → `hidden md:flex`, `md:ml-56` ile desktop-only
+- Danışan ve psikolog dashboard'larına bottom navigation eklendi
+- Grid'ler: `grid-cols-4` → `grid-cols-2 md:grid-cols-4`
+- Padding: `p-8` → `p-4 md:p-8`
+- BookingPage: 2 kolon grid mobilde tek kolon
+
+### Auth Akışı Düzeltmeleri
+- **next parametresi kayboluyor:** Kaydol sayfası `useSearchParams` ile `next` okuyor, kayıt sonrası oraya yönlendiriyor
+- **Google OAuth:** `redirectTo`'ya `?next=` eklendi
+- **Login → Kayıt linki:** `?next=` parametresi taşınıyor
+- **Psikolog booking engeli:** Ana sayfada buton `disabled`, booking `page.tsx`'te server-side role kontrolü (`/psychologist`'e yönlendirme)
+
+---
+
 ## Yapılacaklar
 
 ### 🔴 Kritik
-1. **Mock data şifre sorunu** — Seed route'u Vercel'de düzelt veya auth.users'a doğru hash ekle
+1. **Mock data şifre sorunu** — Seed route'u Vercel'de çalıştır veya kullanıcıları Supabase dashboard'dan manuel oluştur
 2. **İyzico entegrasyonu** — production'a geçiş, webhook, TEST_MODE kaldır
 
 ### 🟡 Önemli
@@ -432,8 +454,8 @@ CRON_SECRET=menta123
 
 ## Bilinen Sorunlar
 
-- **Mock kullanıcı şifreleri çalışmıyor** — `auth.users`'a direkt insert ile şifre hash'i Supabase auth sistemiyle uyumsuz
-- **Seed route 404** — Vercel'de `app/api/admin/seed/route.ts` deploy olmadı, debug gerekiyor
+- **Mock kullanıcı şifreleri** — `auth.users`'a direkt SQL insert ile şifre çalışmıyor; Supabase Dashboard'dan manuel eklemek gerekiyor
+- **Seed route 404** — Vercel'de `app/api/admin/seed/route.ts` deploy olmadı
 - **Storage policy** — `avatars`, `certificates`, `message-files` bucket RLS policy'leri manuel oluşturulmalı
 - **packages tablosu boş** — checkout'ta varsayılan 1 seanslık paket kullanılıyor
 - **next.config.ts TS hatası** — `eslint` property TypeScript'te `NextConfig`'de tanımsız görünüyor ama build çalışıyor

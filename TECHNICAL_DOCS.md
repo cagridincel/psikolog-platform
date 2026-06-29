@@ -1250,3 +1250,162 @@ C: Slot sadece API üzerinden güncellenir, hiçbir zaman direkt client-side gü
 
 **S: Video seans çalışmıyor, ne yapmalıyım?**  
 C: `DAILY_API_KEY` env variable'ını kontrol et. Yoksa fallback URL kullanılır ama bağlantı çalışmaz. Daily.co dashboard'dan aktif bir API key gerekiyor.
+
+---
+
+## 19. Son Değişiklikler (27 Haziran 2026)
+
+### Ana Sayfa Yenilendi (`app/page.tsx`)
+
+Hiwell ve Heltia'dan ilham alınarak 7 yeni bölüm eklendi:
+
+| Bölüm | Açıklama |
+|-------|----------|
+| Hero | Etiket badge, güven ikonları (🔒⭐📱), iki CTA butonu |
+| Nasıl Çalışır | 3 adımlı kart, desktop'ta oklar |
+| Neden Menta | 4 özellik kartı |
+| İstatistikler | Koyu arka plan, scroll'da count-up animasyonu |
+| Yorumlar | Desktop'ta 3 kart, mobilde otomatik carousel |
+| SSS | Accordion, 5 soru |
+| Footer | 4 kolon, linkler, copyright |
+
+**count-up animasyonu** — `IntersectionObserver` ile elemanın viewport'a girince sayaç başlar:
+```typescript
+function useCountUp(target: number, duration = 1500) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        // 16ms interval ile hedefe ulaş
+        observer.disconnect()
+      }
+    }, { threshold: 0.3 })
+    if (ref.current) observer.observe(ref.current)
+  }, [target, duration])
+  return { count, ref }
+}
+```
+
+---
+
+### Mobil Responsive (`ClientDashboard`, `PsychologistDashboard`, `AdminDashboard`)
+
+**Sidebar → Bottom Navigation pattern:**
+
+```
+Desktop (md+):                    Mobil:
+┌──────┬──────────────┐           ┌──────────────────┐
+│ Side │              │           │                  │
+│  bar │   İçerik     │           │     İçerik       │
+│      │              │           │                  │
+└──────┴──────────────┘           ├──────────────────┤
+                                  │  Bottom Nav      │
+                                  └──────────────────┘
+```
+
+- Sidebar: `hidden md:flex` (mobilde gizli)
+- Main: `md:ml-56` (mobilde margin yok)
+- Padding: `p-4 md:p-8`
+- Bottom nav: `md:hidden fixed bottom-0` — ikonlar + etiketler + unread badge
+- Content area: `pb-24 md:pb-8` (bottom nav için alan)
+
+**Responsive grid'ler:**
+```
+grid-cols-4        → grid-cols-2 md:grid-cols-4
+grid-cols-2 (yan)  → grid-cols-1 sm:grid-cols-2
+px-8               → px-4 md:px-8
+```
+
+---
+
+### Auth Akışı Düzeltmeleri
+
+#### `next` Parametresi Kayboluyor Sorunu
+
+**Problem:** Kullanıcı psikolog seçip "Seans Al" → login'e yönlendiriliyor → oradan "Kayıt Ol"'a geçince `next` parametresi kayboluyor → kayıt sonrası `/client`'a gidiyor, psikolog unutuluyor.
+
+**Çözüm:**
+
+```
+Ana sayfa → /auth/login?next=/client/book/[id]
+    │
+    └── "Kayıt Ol" → /auth/kaydol?next=/client/book/[id]  ← next taşındı
+            │
+            ├── Email kayıt → router.replace(next)          ← next okundu
+            └── Google → callback?next=/client/book/[id]    ← next taşındı
+```
+
+```typescript
+// auth/kaydol/page.tsx
+const searchParams = useSearchParams()
+const next = searchParams.get('next') ?? '/client'
+
+// Email kayıt sonrası
+router.replace(next)  // '/client' yerine
+
+// Google OAuth
+redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`
+```
+
+```typescript
+// auth/login/page.tsx — kayıt linki
+<a href={`/auth/kaydol${next ? `?next=${encodeURIComponent(next)}` : ''}`}>
+  Kayıt Ol
+</a>
+```
+
+#### Psikolog Booking Engeli
+
+**Problem:** Login olmuş psikolog "Seans Al" butonuna tıklayabiliyordu.
+
+**Çözüm — İki katmanlı:**
+
+1. **Frontend (`page.tsx`):**
+```typescript
+function handleBooking(psychologistId: string) {
+  if (user?.role === 'psychologist' || user?.role === 'admin') return  // engel
+  // ...
+}
+
+<button disabled={user?.role === 'psychologist' || user?.role === 'admin'}>
+  Seans Al
+</button>
+```
+
+2. **Server-side (`book/[psychologistId]/page.tsx`):**
+```typescript
+const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
+if (userData?.role === 'psychologist') redirect('/psychologist')
+if (userData?.role === 'admin') redirect('/admin')
+```
+
+URL'e direkt girmeye çalışsa da server-side redirect devreye girer.
+
+---
+
+### Danışanlar Sekmesi (`PsychologistDashboard`)
+
+Düz liste yerine danışana göre gruplanmış akordiyon yapısı:
+
+```
+Tarık Camdal (3 seans · Son: 24 Haz)  ▼
+  ├── 24 Haz · 15:00  [Tamamlandı]  [📝 Notu Görüntüle]
+  ├── 17 Haz · 15:00  [Tamamlandı]  [Not Ekle]
+  └── 10 Haz · 09:00  [Onaylı]
+Haşim İşcan (1 seans · Onay bekliyor) ▶
+```
+
+- `useMemo` ile `client_id`'ye göre gruplama
+- `useState<Set<string>>` ile açık/kapalı durumu
+- `page.tsx`'te `slot_start_time` ve `hasNote` (completed_sessions join) çekiliyor
+- "📝 Notu Gör" mavi, "Not Ekle" gri stil farkı
+
+---
+
+**S: Psikolog neden booking sayfasına giremez?**  
+C: İki katmanlı koruma var. Frontend'de buton disabled, server-side'da `book/[id]/page.tsx` role kontrolü yapıp yönlendiriyor. URL'e direkt girse de redirect çalışır.
+
+**S: Kullanıcı kayıt olunca neden psikolog seçimi kayboluyor?**  
+C: Kayboluyor gibi görünüyorsa `next` parametresi kaybolmuş demektir. Login → kaydol linkinin `?next=` taşıyıp taşımadığını kontrol et. Kaydol formunda `useSearchParams()` ile `next` okunup `router.replace(next)` yapılmalı.
+

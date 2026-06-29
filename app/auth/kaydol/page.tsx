@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const C = { bg: '#F2F5F9', navy: '#1D3557', blue: '#1A6BB5', muted: '#8FA3BF', border: '#E4EAF2', danger: '#B91C1C', dangerTint: '#FDECEA' }
@@ -21,6 +21,9 @@ function Input({ label, type = 'text', value, onChange, placeholder, required, m
 
 function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') ?? '/client'
+
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,7 +41,7 @@ function RegisterForm() {
     if (err || !data.user) { setError(err?.message ?? 'Kayıt sırasında bir hata oluştu.'); setLoading(false); return }
     if (data.session) {
       await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: fullName }) })
-      router.replace('/client')
+      router.replace(next)  // ← next parametresine yönlendir
     } else {
       setSuccess(true)
     }
@@ -47,7 +50,11 @@ function RegisterForm() {
 
   async function handleGoogle() {
     setGoogleLoading(true)
-    await createClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback` } })
+    // Google OAuth'a next parametresini taşı
+    await createClient().auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
+    })
   }
 
   if (success) return (

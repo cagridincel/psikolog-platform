@@ -14,6 +14,16 @@ export default async function Page({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/auth/login?next=/client/book/${psychologistId}`)
 
+  // Psikolog ve admin seans alamaz
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single() as { data: { role: string } | null }
+
+  if (userData?.role === 'psychologist') redirect('/psychologist')
+  if (userData?.role === 'admin') redirect('/admin')
+
   const { data: profile } = await supabase
     .from('profiles')
     .select(`

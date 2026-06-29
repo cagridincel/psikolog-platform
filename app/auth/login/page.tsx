@@ -108,7 +108,7 @@ function LoginForm() {
           <div className="mt-6 pt-5 border-t text-center space-y-2" style={{ borderColor: COLORS.border }}>
             <p className="text-sm" style={{ color: COLORS.muted }}>
               Hesabınız yok mu?{' '}
-              <a href="/auth/kaydol" className="font-medium" style={{ color: COLORS.blue }}>Kayıt Ol</a>
+              <a href={`/auth/kaydol${next ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium" style={{ color: COLORS.blue }}>Kayıt Ol</a>
             </p>
             <p className="text-sm" style={{ color: COLORS.muted }}>
               Psikolog musunuz?{' '}

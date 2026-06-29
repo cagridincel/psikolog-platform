@@ -91,7 +91,6 @@ export default function HomePage() {
   }, [])
 
   function handleBooking(psychologistId: string) {
-    if (user?.role === 'psychologist' || user?.role === 'admin') return
     if (user) router.push(`/client/book/${psychologistId}`)
     else router.push(`/auth/login?next=/client/book/${psychologistId}`)
   }
@@ -323,11 +322,9 @@ export default function HomePage() {
                       <span className="text-xs font-normal ml-1" style={{ color: C.muted }}>/ seans</span>
                     </span>
                     <button onClick={() => handleBooking(p.id)}
-                      className="text-xs font-medium px-3.5 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity disabled:opacity-40"
-                      style={{ background: C.blue }}
-                      disabled={user?.role === 'psychologist' || user?.role === 'admin'}
-                      title={user?.role === 'psychologist' ? 'Psikologlar seans alamaz' : undefined}>
-                      {user?.role === 'psychologist' || user?.role === 'admin' ? 'Seans Al' : 'Seans Al'}
+                      className="text-xs font-medium px-3.5 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"
+                      style={{ background: C.blue }}>
+                      Seans Al
                     </button>
                   </div>
                 </div>
