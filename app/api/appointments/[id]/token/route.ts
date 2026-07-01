@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createMeetingToken } from '@/lib/daily'
+import { getSettingNumber } from '@/lib/settings'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = { from: (table: string) => any }
 
@@ -32,7 +33,6 @@ export async function GET(
 
   if (!appointment) return NextResponse.json({ error: 'Randevu bulunamadı' }, { status: 404 })
 
-  // Kullanıcı bu randevuda mı?
   const isClient = appointment.client_id === user.id
   const isPsychologist = appointment.psychologist_id === user.id
   if (!isClient && !isPsychologist) return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
@@ -41,7 +41,12 @@ export async function GET(
     return NextResponse.json({ error: 'Bu randevu henüz onaylanmadı' }, { status: 409 })
   }
 
-  // 2 dakika kuralı
+  // Ayarları DB'den oku
+  const [earlyMinutes, durationMinutes] = await Promise.all([
+    getSettingNumber('session_early_join_minutes', 20),
+    getSettingNumber('session_duration_minutes', 70),
+  ])
+
   const startTime = appointment.slot_start_time ? new Date(appointment.slot_start_time) : null
   const now = new Date()
 
@@ -49,7 +54,7 @@ export async function GET(
     const diffMs = startTime.getTime() - now.getTime()
     const diffMins = diffMs / 60000
 
-    if (diffMins > 20) {
+    if (diffMins > earlyMinutes) {
       return NextResponse.json({
         early: true,
         secondsUntilStart: Math.floor(diffMs / 1000),
@@ -57,13 +62,12 @@ export async function GET(
       })
     }
 
-    const sessionEndMs = startTime.getTime() + (90 + 15) * 60000
+    const sessionEndMs = startTime.getTime() + durationMinutes * 60000
     if (now.getTime() > sessionEndMs) {
       return NextResponse.json({ error: 'Seans süresi doldu' }, { status: 410 })
     }
   }
 
-  // Token oluştur
   const roomUrl = appointment.meeting_room_url ?? `https://meet.daily.co/session-${appointmentId}`
   const roomName = roomUrl.split('/').pop() ?? `session-${appointmentId}`
 

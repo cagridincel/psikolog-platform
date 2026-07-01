@@ -6,15 +6,28 @@ const C = { navy: '#1D3557', blue: '#1A6BB5', blueTint: '#EBF3FC', muted: '#8FA3
 
 interface Setting {
   key: string
-  value: boolean
+  value: boolean | number
   description: string
   updated_at: string
 }
 
-const SETTING_LABELS: Record<string, { label: string; detail: string }> = {
+const SETTING_LABELS: Record<string, { label: string; detail: string; type?: 'toggle' | 'number'; unit?: string }> = {
   single_psychologist_restriction: {
     label: 'Tek Psikolog Kısıtlaması',
     detail: 'Aktif paketi olan danışanların farklı bir psikolog seçmesini engeller. Paketleri tükenen danışanlar yeni psikolog seçebilir.',
+    type: 'toggle',
+  },
+  session_early_join_minutes: {
+    label: 'Erken Katılım Süresi',
+    detail: 'Seans başlamadan kaç dakika önce video odasına girilebileceğini belirler.',
+    type: 'number',
+    unit: 'dakika',
+  },
+  session_duration_minutes: {
+    label: 'Seans Açık Kalma Süresi',
+    detail: 'Seans başlangıcından itibaren video odasının kaç dakika açık kalacağını belirler.',
+    type: 'number',
+    unit: 'dakika',
   },
 }
 
@@ -37,15 +50,31 @@ export default function PlatformControls() {
       .then(data => { setSettings(data ?? []); setLoading(false) })
   }, [])
 
-  async function toggle(key: string, current: boolean) {
+  async function toggle(key: string, current: boolean | number) {
+    const newValue = typeof current === 'boolean' ? !current : current
     setSaving(key)
     const res = await fetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value: !current }),
+      body: JSON.stringify({ key, value: newValue }),
     })
     if (res.ok) {
-      setSettings(prev => prev.map(s => s.key === key ? { ...s, value: !current, updated_at: new Date().toISOString() } : s))
+      setSettings(prev => prev.map(s => s.key === key ? { ...s, value: newValue, updated_at: new Date().toISOString() } : s))
+      setSavedKey(key)
+      setTimeout(() => setSavedKey(null), 2000)
+    }
+    setSaving(null)
+  }
+
+  async function saveNumber(key: string, value: number) {
+    setSaving(key)
+    const res = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value }),
+    })
+    if (res.ok) {
+      setSettings(prev => prev.map(s => s.key === key ? { ...s, value, updated_at: new Date().toISOString() } : s))
       setSavedKey(key)
       setTimeout(() => setSavedKey(null), 2000)
     }
@@ -68,6 +97,7 @@ export default function PlatformControls() {
         const meta = SETTING_LABELS[setting.key]
         const isSaving = saving === setting.key
         const isSaved = savedKey === setting.key
+        const isNumber = meta?.type === 'number'
 
         return (
           <div key={setting.key} className="bg-white rounded-2xl border p-5" style={{ borderColor: C.border }}>
@@ -77,13 +107,15 @@ export default function PlatformControls() {
                   <p className="text-sm font-medium" style={{ color: C.navy }}>
                     {meta?.label ?? setting.key}
                   </p>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                    style={{
-                      background: setting.value ? C.successTint : C.bg,
-                      color: setting.value ? C.success : C.muted,
-                    }}>
-                    {setting.value ? 'Aktif' : 'Pasif'}
-                  </span>
+                  {!isNumber && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: setting.value ? C.successTint : C.bg,
+                        color: setting.value ? C.success : C.muted,
+                      }}>
+                      {setting.value ? 'Aktif' : 'Pasif'}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: C.muted }}>
                   {meta?.detail ?? setting.description}
@@ -93,24 +125,43 @@ export default function PlatformControls() {
                 </p>
               </div>
 
-              {/* Toggle */}
-              <button
-                onClick={() => toggle(setting.key, setting.value)}
-                disabled={isSaving}
-                className="flex-shrink-0 relative transition-opacity disabled:opacity-60"
-                style={{ cursor: isSaving ? 'wait' : 'pointer', background: 'none', border: 'none' }}>
-                <div className="w-12 h-6 rounded-full transition-all duration-200"
-                  style={{ background: setting.value ? C.blue : '#D1D5DB' }}>
-                  <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
-                    style={{ left: setting.value ? 26 : 2 }} />
+              {/* Toggle veya Number input */}
+              {isNumber ? (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <input
+                    type="number"
+                    min={1}
+                    max={300}
+                    defaultValue={Number(setting.value)}
+                    onBlur={e => saveNumber(setting.key, parseInt(e.target.value))}
+                    disabled={isSaving}
+                    className="w-20 text-center text-sm font-medium rounded-lg px-2 py-1.5 outline-none"
+                    style={{ border: `1px solid ${C.border}`, color: C.navy, background: C.bg }}
+                  />
+                  <span className="text-xs" style={{ color: C.muted }}>{meta?.unit}</span>
+                  {isSaved && (
+                    <span className="text-xs" style={{ color: C.success }}>✓</span>
+                  )}
                 </div>
-                {isSaved && (
-                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap"
-                    style={{ color: C.success }}>
-                    ✓ Kaydedildi
-                  </span>
-                )}
-              </button>
+              ) : (
+                <button
+                  onClick={() => toggle(setting.key, setting.value)}
+                  disabled={isSaving}
+                  className="flex-shrink-0 relative transition-opacity disabled:opacity-60"
+                  style={{ cursor: isSaving ? 'wait' : 'pointer', background: 'none', border: 'none' }}>
+                  <div className="w-12 h-6 rounded-full transition-all duration-200"
+                    style={{ background: setting.value ? C.blue : '#D1D5DB' }}>
+                    <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
+                      style={{ left: setting.value ? 26 : 2 }} />
+                  </div>
+                  {isSaved && (
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap"
+                      style={{ color: C.success }}>
+                      ✓ Kaydedildi
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Uyarı — aktif kısıtlama */}

@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 
 const C = { navy: '#1D3557', blue: '#1A6BB5', blueTint: '#EBF3FC', muted: '#8FA3BF', border: '#E4EAF2', danger: '#B91C1C', dangerTint: '#FDECEA', success: '#1A7A4A', successTint: '#E8F5EE', warning: '#92600A', warningTint: '#FEF3E2' }
 
+// Default seans ayarları — API'den güncellenir
+const DEFAULT_SETTINGS = { earlyMinutes: 20, durationMinutes: 70 }
+
 interface Slot {
   id: string
   start_time: string
@@ -76,6 +79,14 @@ export default function SlotModal({
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [manualLoading, setManualLoading] = useState(false)
   const [warningMsg, setWarningMsg] = useState('')
+  const [sessionSettings, setSessionSettings] = useState(DEFAULT_SETTINGS)
+
+  useEffect(() => {
+    fetch('/api/admin/settings/session')
+      .then(r => r.json())
+      .then(d => { if (d.earlyMinutes) setSessionSettings(d) })
+      .catch(() => {})
+  }, [])
 
   const timeLabel = slot ? formatSlotTime(slot.start_time) : cell ? formatCellTime(cell.date, cell.hour) : ''
 
@@ -263,8 +274,8 @@ export default function SlotModal({
                       const now = new Date()
                       const start = new Date(slot.start_time)
                       const diffMins = (start.getTime() - now.getTime()) / 60000
-                      const expired = now.getTime() > start.getTime() + 95 * 60000
-                      const tooEarly = diffMins > 20
+                      const expired = now.getTime() > start.getTime() + sessionSettings.durationMinutes * 60000
+                      const tooEarly = diffMins > sessionSettings.earlyMinutes
                       const canJoin = !tooEarly && !expired
                       return canJoin ? (
                         <button onClick={() => { onJoin(appointment.id); onClose() }}
@@ -274,7 +285,7 @@ export default function SlotModal({
                         </button>
                       ) : expired ? (
                         <div className="flex-1 py-2.5 rounded-xl text-sm text-center" style={{ color: C.muted, background: '#F2F5F9' }}>
-                          Seans süresi doldu
+                          Seans sona erdi
                         </div>
                       ) : (
                         <div className="flex-1 py-2.5 rounded-xl text-sm text-center" style={{ color: C.muted, background: '#F2F5F9' }}>

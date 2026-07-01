@@ -118,21 +118,30 @@ export default function VideoModal({ appointmentId, onClose, participantName }: 
 
     await frame.join(joinOptions)
 
-    // Video tile'ları DOM'a monte et
+    // Video ve audio tile'larını DOM'a monte et
     const updateTiles = () => {
       if (!containerRef.current) return
       containerRef.current.innerHTML = ''
       const participants = frame.participants()
       Object.values(participants).forEach((p: any) => {
+        // Video
         if (p.tracks?.video?.persistentTrack) {
           const video = document.createElement('video')
           video.srcObject = new MediaStream([p.tracks.video.persistentTrack])
           video.autoplay = true
           video.playsInline = true
+          video.muted = p.local  // Kendi sesini duyma (echo)
           video.style.cssText = p.local
             ? 'position:absolute;bottom:14px;right:14px;width:140px;height:100px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,0.15);z-index:10'
             : 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'
           containerRef.current?.appendChild(video)
+        }
+        // Audio — local olmayan katılımcının sesi (echo önleme)
+        if (p.tracks?.audio?.persistentTrack && !p.local) {
+          const audio = document.createElement('audio')
+          audio.srcObject = new MediaStream([p.tracks.audio.persistentTrack])
+          audio.autoplay = true
+          containerRef.current?.appendChild(audio)
         }
       })
     }
