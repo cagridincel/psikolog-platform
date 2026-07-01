@@ -1,5 +1,5 @@
 'use client'
-
+// v2 - rebuilt 2026-07-01
 import { useState, useEffect } from 'react'
 
 const C = { navy: '#1D3557', blue: '#1A6BB5', muted: '#8FA3BF', border: '#E4EAF2', bg: '#F2F5F9', success: '#1A7A4A', successTint: '#E8F5EE', warning: '#92600A', warningTint: '#FEF3E2' }
