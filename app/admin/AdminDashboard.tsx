@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 
 const QuestionTreeEditor = dynamic(() => import('@/components/admin/QuestionTreeEditor'), { ssr: false })
 const MessagingPanel = dynamic(() => import('@/components/messaging/MessagingPanel'), { ssr: false })
-const PlatformControls = dynamic(() => import('@/components/admin/PlatformControls'), { ssr: false })
+import PlatformControls from '@/components/admin/PlatformControls'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
