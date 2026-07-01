@@ -51,7 +51,10 @@ export default function PlatformControls() {
   }, [])
 
   async function toggle(key: string, current: boolean | number) {
-    const newValue = typeof current === 'boolean' ? !current : current
+    // Number tipli ayarlar toggle edilemez
+    const meta = SETTING_LABELS[key]
+    if (meta?.type === 'number') return
+    const newValue = !current
     setSaving(key)
     const res = await fetch('/api/admin/settings', {
       method: 'PUT',
