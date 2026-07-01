@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 
 const QuestionTreeEditor = dynamic(() => import('@/components/admin/QuestionTreeEditor'), { ssr: false })
 const MessagingPanel = dynamic(() => import('@/components/messaging/MessagingPanel'), { ssr: false })
-import PlatformControls from '@/components/admin/PlatformControls'
+const PlatformControls = dynamic(() => import('@/components/admin/PlatformControls'), { ssr: false })
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Stats {
@@ -663,94 +663,10 @@ export default function AdminDashboard({ adminId, adminName }: { adminId: string
               <h1 className="text-xl font-medium" style={{ color: '#1D3557', letterSpacing: '-0.01em' }}>Platform Kontrolleri</h1>
               <p className="text-sm mt-0.5" style={{ color: '#8FA3BF' }}>Platformun davranışını etkileyen ayarları buradan yönetin</p>
             </div>
-            <InlineControls />
+            <PlatformControls />
           </div>
         )}
       </main>
-    </div>
-  )
-}
-
-const NUMBER_KEYS = ['session_early_join_minutes', 'session_duration_minutes']
-const CTRL_LABELS: Record<string, { label: string; detail: string; unit?: string }> = {
-  single_psychologist_restriction: { label: 'Tek Psikolog Kısıtlaması', detail: 'Aktif paketi olan danışanların farklı bir psikolog seçmesini engeller.' },
-  session_early_join_minutes: { label: 'Erken Katılım Süresi', detail: 'Seans başlamadan kaç dakika önce video odasına girilebilir.', unit: 'dakika' },
-  session_duration_minutes: { label: 'Seans Açık Kalma Süresi', detail: 'Seans başlangıcından itibaren video odasının kaç dakika açık kalacağı.', unit: 'dakika' },
-}
-
-function InlineControls() {
-  const [settings, setSettings] = React.useState<{ key: string; value: boolean | number; updated_at: string }[]>([])
-  const [saving, setSaving] = React.useState<string | null>(null)
-  const [saved, setSaved] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    fetch('/api/admin/settings').then(r => r.json()).then(d => setSettings(d ?? []))
-  }, [])
-
-  async function saveVal(key: string, value: boolean | number) {
-    setSaving(key)
-    const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value }) })
-    if (res.ok) {
-      setSettings(prev => prev.map(s => s.key === key ? { ...s, value, updated_at: new Date().toISOString() } : s))
-      setSaved(key); setTimeout(() => setSaved(null), 2000)
-    }
-    setSaving(null)
-  }
-
-  const toggleSettings = settings.filter(s => !NUMBER_KEYS.includes(s.key))
-  const numberSettings = settings.filter(s => NUMBER_KEYS.includes(s.key))
-
-  return (
-    <div className="space-y-3 max-w-2xl">
-      {toggleSettings.map(s => {
-        const meta = CTRL_LABELS[s.key]
-        const isOn = s.value === true
-        return (
-          <div key={s.key} className="bg-white rounded-2xl border p-5" style={{ borderColor: '#E4EAF2' }}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium" style={{ color: '#1D3557' }}>{meta?.label ?? s.key}</p>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: isOn ? '#E8F5EE' : '#F2F5F9', color: isOn ? '#1A7A4A' : '#8FA3BF' }}>
-                    {isOn ? 'Aktif' : 'Pasif'}
-                  </span>
-                </div>
-                <p className="text-sm" style={{ color: '#8FA3BF' }}>{meta?.detail ?? ''}</p>
-              </div>
-              <button onClick={() => saveVal(s.key, !isOn)} disabled={saving === s.key}
-                className="flex-shrink-0 relative disabled:opacity-60" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                <div className="w-12 h-6 rounded-full" style={{ background: isOn ? '#1A6BB5' : '#D1D5DB' }}>
-                  <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow" style={{ left: isOn ? 26 : 2 }} />
-                </div>
-                {saved === s.key && <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap" style={{ color: '#1A7A4A' }}>✓</span>}
-              </button>
-            </div>
-          </div>
-        )
-      })}
-      {numberSettings.map(s => {
-        const meta = CTRL_LABELS[s.key]
-        const numVal = typeof s.value === 'number' ? s.value : (s.key === 'session_early_join_minutes' ? 20 : 70)
-        return (
-          <div key={s.key} className="bg-white rounded-2xl border p-5" style={{ borderColor: '#E4EAF2' }}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <p className="text-sm font-medium mb-1" style={{ color: '#1D3557' }}>{meta?.label ?? s.key}</p>
-                <p className="text-sm" style={{ color: '#8FA3BF' }}>{meta?.detail ?? ''}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <input type="number" min={1} max={300} defaultValue={numVal}
-                  onBlur={e => { const v = parseInt(e.target.value); if (!isNaN(v)) saveVal(s.key, v) }}
-                  disabled={saving === s.key}
-                  className="w-20 text-center text-sm rounded-lg px-2 py-1.5 outline-none"
-                  style={{ border: '1px solid #E4EAF2', color: '#1D3557', background: '#F2F5F9' }} />
-                <span className="text-xs" style={{ color: '#8FA3BF' }}>{meta?.unit}</span>
-                {saved === s.key && <span className="text-xs" style={{ color: '#1A7A4A' }}>✓</span>}
-              </div>
-            </div>
-          </div>
-        )
-      })}
     </div>
   )
 }
