@@ -20,7 +20,7 @@ export async function GET() {
   const { data } = await service
     .from('platform_settings')
     .select('key, value, description, updated_at')
-    .order('key') as { data: { key: string; value: boolean; description: string; updated_at: string }[] | null }
+    .order('key') as { data: { key: string; value: boolean | number; description: string; updated_at: string }[] | null }
 
   return NextResponse.json(data ?? [])
 }
