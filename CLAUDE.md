@@ -443,12 +443,80 @@ CRON_SECRET=menta123
 ### 🟡 Önemli
 3. **Video seans sonrası** — danışan değerlendirme ekranı
 4. **Admin — psikolog değişim akışı** — danışanın psikologunu admin panelinden değiştirebilmeli
+5. **Mobil uygulama (Expo)** — ayrı repo, mevcut API'ler aynen kullanılacak
 
 ### 🟢 Nice to Have
-5. **`supabase gen types`** — `AnyClient` hack'ini kaldır
-6. **`packages` tablosu** — 1/3/6 seanslık paket tanımları, checkout'ta göster
-7. **Test suite genişletme** — mesajlaşma, klinik not, platform kontrolleri için testler
-8. **Seed route'u sil** — mock data tamamlanınca `app/api/admin/seed/route.ts` silinmeli
+6. **`supabase gen types`** — `AnyClient` hack'ini kaldır
+7. **`packages` tablosu** — 1/3/6 seanslık paket tanımları, checkout'ta göster
+8. **Test suite genişletme** — mesajlaşma, klinik not, platform kontrolleri için testler
+9. **Seed route'u sil** — mock data tamamlanınca `app/api/admin/seed/route.ts` silinmeli
+
+---
+
+## Mobil Uygulama Yol Haritası (Expo)
+
+### Stack
+- **Framework:** Expo SDK (managed workflow)
+- **Navigasyon:** Expo Router — file-based, Next.js'e çok benzer
+- **Auth/DB:** `@supabase/supabase-js` — web ile birebir aynı client
+- **Video:** `@daily-co/react-native-daily-js`
+- **Stil:** NativeWind (Tailwind syntax) veya React Native StyleSheet
+- **Push:** Expo Notifications + Supabase Edge Function
+
+### Yeniden Kullanılabilecekler (Web'den)
+- Tüm `/api/*` route'ları — Vercel URL üzerinden çağrılır
+- Supabase sorgu mantığı — aynı syntax
+- İş mantığı (matching algoritması, settings, bildirimler)
+- Design system renkleri
+
+### Yeniden Yazılacaklar
+- Tüm UI (`View`, `Text`, `TouchableOpacity`, `ScrollView`)
+- Navigasyon yapısı (Expo Router tabs)
+- Video modal (`@daily-co/react-native-daily-js`)
+- Dosya yükleme (Expo ImagePicker, DocumentPicker)
+- Push notification altyapısı
+
+### MVP Ekran Yapısı
+```
+app/
+├── (auth)/
+│   ├── login.tsx
+│   ├── register.tsx
+│   └── forgot-password.tsx
+├── (client)/
+│   ├── (tabs)/
+│   │   ├── index.tsx        → Ana sayfa / psikolog listesi
+│   │   ├── sessions.tsx     → Seanslarım
+│   │   ├── messages.tsx     → Mesajlar
+│   │   └── profile.tsx      → Profil
+│   └── book/[id].tsx        → Slot seçimi
+├── (psychologist)/
+│   ├── (tabs)/
+│   │   ├── calendar.tsx     → Takvim
+│   │   ├── clients.tsx      → Danışanlarım
+│   │   └── messages.tsx     → Mesajlar
+│   └── notes/[id].tsx       → Klinik notlar
+└── video/[appointmentId].tsx → Video seans
+```
+
+### Geliştirme Öncelik Sırası
+1. Expo kurulum + Supabase auth (login/register)
+2. Danışan: psikolog listesi + booking akışı
+3. Danışan: seans listesi + "Katıl" butonu
+4. Video seans ekranı (Daily.co)
+5. Psikolog: takvim + randevu yönetimi
+6. Mesajlaşma (Supabase Realtime)
+7. Push notifications
+8. App Store / Play Store yayını
+
+### Kurulum
+```bash
+npx create-expo-app menta-mobile --template blank-typescript
+cd menta-mobile
+npx expo install expo-router @supabase/supabase-js
+npx expo install @daily-co/react-native-daily-js
+npx expo install expo-notifications expo-image-picker
+```
 
 ---
 
@@ -459,6 +527,48 @@ CRON_SECRET=menta123
 - **Storage policy** — `avatars`, `certificates`, `message-files` bucket RLS policy'leri manuel oluşturulmalı
 - **packages tablosu boş** — checkout'ta varsayılan 1 seanslık paket kullanılıyor
 - **next.config.ts TS hatası** — `eslint` property TypeScript'te `NextConfig`'de tanımsız görünüyor ama build çalışıyor
+
+---
+
+## Bu Oturumda Tamamlananlar (1 Temmuz 2026)
+
+### Video Seans İyileştirmeleri
+- **Ses sorunu giderildi** — `createCallObject` modunda audio track'leri manuel DOM'a eklenmiyordu, `<audio>` elementi eklendi, `video.muted = p.local` ile echo önlendi
+- **@daily-co/daily-js** 0.70.0 → 0.91.0 güncellendi
+- **Seans zaman penceresi** — 20dk önce giriş, 70dk açık kalma (sabit değerlerden admin ayarına taşındı)
+
+### Seans Zaman Ayarları (Admin Kontrol)
+- `platform_settings` tablosuna iki yeni kayıt:
+  - `session_early_join_minutes` (default: 20)
+  - `session_duration_minutes` (default: 70)
+- Admin "Kontroller" sekmesinde number input ile düzenlenebilir
+- `lib/settings.ts`'e `getSettingNumber()` helper eklendi
+- `GET /api/admin/settings/session` — public endpoint, client-side bileşenler için
+- Token route ve SlotModal bu ayarları dinamik olarak okuyor
+- "Seansı Bitir" butonu her zaman aktif (zaman kısıtlaması yok)
+
+### Auth & Routing Düzeltmeleri
+- **next parametresi** kaydol sayfasına taşınıyor — psikolog seçimi kaybolmuyor
+- **Psikolog booking engeli** — frontend disabled + server-side redirect
+- **@tailwindcss/postcss** deploy hatası giderildi
+
+---
+
+## Altyapı & Paket Önerileri
+
+### Mevcut Durum
+| Platform | Plan | Limit |
+|----------|------|-------|
+| Vercel | Hobby (ücretsiz) | 10s timeout, günde 1 cron |
+| Supabase | Free | 500MB DB, 50k MAU, pause riski |
+
+### Önerilen Geçiş
+| Platform | Plan | Ücret | Kritik Fark |
+|----------|------|-------|-------------|
+| **Supabase Pro** | Pro | $25/ay | Proje pause olmaz, 8GB DB, daily backup |
+| **Vercel Pro** | Pro | $20/ay | 60s timeout, Vercel cron (cron-job.org'a gerek kalmaz) |
+
+**Öncelik:** Supabase Pro — Free tier'da proje 1 hafta inaktif kalırsa otomatik pause oluyor, production için kritik.
 
 ---
 

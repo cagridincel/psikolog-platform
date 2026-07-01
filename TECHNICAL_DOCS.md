@@ -1409,3 +1409,130 @@ C: İki katmanlı koruma var. Frontend'de buton disabled, server-side'da `book/[
 **S: Kullanıcı kayıt olunca neden psikolog seçimi kayboluyor?**  
 C: Kayboluyor gibi görünüyorsa `next` parametresi kaybolmuş demektir. Login → kaydol linkinin `?next=` taşıyıp taşımadığını kontrol et. Kaydol formunda `useSearchParams()` ile `next` okunup `router.replace(next)` yapılmalı.
 
+---
+
+## 20. Video Seans Ses Sorunu ve Çözümü (1 Temmuz 2026)
+
+### Problem
+
+`DailyIframe.createCallObject()` kullanıldığında (iframe modundan farklı olarak) ses akışları **otomatik işlenmiyor**. Yalnızca video track'leri DOM'a eklenince karşı tarafın sesi duyulmuyor.
+
+### Çözüm
+
+Her remote katılımcı için `<audio>` elementi manuel oluşturulup DOM'a eklendi:
+
+```typescript
+// Video
+const video = document.createElement('video')
+video.srcObject = new MediaStream([p.tracks.video.persistentTrack])
+video.autoplay = true
+video.playsInline = true
+video.muted = p.local  // Kendi sesini duyma (echo önleme)
+
+// Audio — sadece remote katılımcılar için
+if (p.tracks?.audio?.persistentTrack && !p.local) {
+  const audio = document.createElement('audio')
+  audio.srcObject = new MediaStream([p.tracks.audio.persistentTrack])
+  audio.autoplay = true
+  containerRef.current?.appendChild(audio)
+}
+```
+
+**`video.muted = p.local`:** Kendi video element'ini mute etmezsen kendi sesin geri gelir (echo).
+
+**`!p.local`:** Kendi audio element'ini oluşturmazsan echo olur.
+
+---
+
+## 21. Seans Zaman Ayarları (Admin Kontrol)
+
+### Mimari
+
+Seans zaman kuralları hardcode değil, `platform_settings` tablosundan dinamik okunur:
+
+```
+Admin paneli → PUT /api/admin/settings → platform_settings güncellenir
+                                              │
+                    ┌─────────────────────────┤
+                    ▼                         ▼
+    token/route.ts (server)      SlotModal (client)
+    getSettingNumber() ile       GET /api/admin/settings/session
+    DB'den okur                  ile okur
+```
+
+### Yeni Helper: `getSettingNumber`
+
+```typescript
+// lib/settings.ts
+export async function getSettingNumber(key: string, defaultValue: number): Promise<number> {
+  const val = await getRawSetting(key)
+  if (val === null) return defaultValue
+  const n = Number(val)
+  return isNaN(n) ? defaultValue : n
+}
+```
+
+### Public Endpoint
+
+`GET /api/admin/settings/session` — auth gerektirmez, sadece zaman ayarlarını döner:
+
+```json
+{ "earlyMinutes": 20, "durationMinutes": 70 }
+```
+
+Client-side bileşenler (SlotModal) bu endpoint'i kullanır. Server-side (token route) direkt `getSettingNumber()` çağırır.
+
+### Admin UI
+
+`PlatformControls.tsx`'te toggle ve number input ayrımı yapıldı:
+
+```typescript
+const SETTING_LABELS = {
+  single_psychologist_restriction: { type: 'toggle', ... },
+  session_early_join_minutes:      { type: 'number', unit: 'dakika', ... },
+  session_duration_minutes:        { type: 'number', unit: 'dakika', ... },
+}
+```
+
+Number input'ta `onBlur` event'inde `saveNumber()` çağrılır — input'tan çıkınca otomatik kaydedilir.
+
+---
+
+## 22. Altyapı ve Ölçekleme
+
+### Mevcut Altyapı
+
+| Katman | Servis | Plan | Limit |
+|--------|--------|------|-------|
+| Frontend/API | Vercel | Hobby (ücretsiz) | 10s function timeout, günde 1 cron |
+| Veritabanı/Auth | Supabase | Free | 500MB DB, 50k MAU, 1 hafta inaktif → pause |
+| Video | Daily.co | Developer | 10k dakika/ay ücretsiz |
+| Cron | cron-job.org | Ücretsiz | 5dk aralık |
+
+### Önerilen Production Geçişi
+
+**Supabase Pro ($25/ay) — Öncelikli:**
+- Proje hiçbir zaman pause olmaz (Free'de 1 hafta inaktif → otomatik durdurulur)
+- 8GB veritabanı (Free: 500MB)
+- Point-in-time recovery + daily backup
+- 500 Realtime concurrent connection (Free: 200)
+- 100GB Storage (Free: 1GB)
+
+**Vercel Pro ($20/ay) — İkincil:**
+- Serverless function timeout: 60s (Free: 10s — uzun DB sorguları zaman aşımına uğrayabilir)
+- Vercel Cron her sıklıkta (cron-job.org ihtiyacı kalkar)
+- Web Analytics dahil
+
+**Daily.co:**
+- Developer plan 10k dakika/ay ücretsiz
+- Kullanıcı sayısı arttıkça $0.00099/dakika
+
+### Performans İyileştirme Önerileri
+
+1. **Database indexes** — `appointments.client_id`, `appointments.psychologist_id`, `messages.conversation_id` için index ekle
+2. **`next/image`** — `<img>` yerine Next.js Image component kullan (LCP iyileşir)
+3. **Supabase Connection Pooling** — Supabase dashboard'dan PgBouncer'ı etkinleştir
+4. **Edge Functions** — Bildirim gönderme işlemlerini Supabase Edge Function'a taşı
+
+**S: Supabase Free'de ne zaman Pro'ya geçmeli?**  
+C: Üretim ortamına geçmeden önce. Free tier'da proje 1 hafta inaktif kalırsa otomatik pause oluyor — bu production için kabul edilemez. Ayrıca 50k MAU limiti ve 500MB DB, büyüyen bir platformda hızla dolabilir.
