@@ -100,7 +100,7 @@ export default function PlatformControls() {
         const meta = SETTING_LABELS[setting.key]
         const isSaving = saving === setting.key
         const isSaved = savedKey === setting.key
-        const isNumber = meta?.type === 'number'
+        const isNumber = setting.key === 'session_early_join_minutes' || setting.key === 'session_duration_minutes'
 
         return (
           <div key={setting.key} className="bg-white rounded-2xl border p-5" style={{ borderColor: C.border }}>
@@ -135,7 +135,7 @@ export default function PlatformControls() {
                     type="number"
                     min={1}
                     max={300}
-                    defaultValue={Number(setting.value)}
+                    defaultValue={typeof setting.value === 'number' ? setting.value : setting.key === 'session_early_join_minutes' ? 20 : 70}
                     onBlur={e => saveNumber(setting.key, parseInt(e.target.value))}
                     disabled={isSaving}
                     className="w-20 text-center text-sm font-medium rounded-lg px-2 py-1.5 outline-none"
